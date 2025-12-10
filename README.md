@@ -1,6 +1,6 @@
 # 🎯 Sistema de Suporte Automatizado com IA
 
-Sistema completo de tickets de suporte com chat integrado usando Inteligência Artificial (OpenAI GPT ou Google Gemini) para responder automaticamente às dúvidas dos alunos.
+Sistema completo de tickets de suporte com chat integrado usando Inteligência Artificial Google Gemini para responder automaticamente às dúvidas dos alunos.
 
 ![React](https://img.shields.io/badge/React-18.2-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript)
