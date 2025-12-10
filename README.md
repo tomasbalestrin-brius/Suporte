@@ -16,7 +16,7 @@ Sistema completo de tickets de suporte com chat integrado usando Inteligência A
 - Totalmente responsivo
 
 ### 🤖 Chat com IA
-- Respostas automáticas usando OpenAI GPT-3.5/4 ou Google Gemini
+- Respostas automáticas usando Google Gemini AI
 - Análise inteligente de tickets para categorização e priorização
 - Sugestões automáticas de resposta
 
@@ -61,15 +61,14 @@ Sistema completo de tickets de suporte com chat integrado usando Inteligência A
   - Row Level Security (RLS)
 
 - **IA:**
-  - OpenAI API (GPT-3.5/4)
-  - Google Gemini API (alternativa)
+  - Google Gemini API
 
 ## 📋 Pré-requisitos
 
 - Node.js 18+
 - NPM ou Yarn
 - Conta no Supabase
-- Chave da API OpenAI ou Google Gemini
+- Chave da API Google Gemini
 
 ## 🛠️ Instalação
 
@@ -101,11 +100,8 @@ Crie um arquivo `.env` na raiz do projeto:
 VITE_SUPABASE_URL=sua_url_do_supabase
 VITE_SUPABASE_ANON_KEY=sua_chave_anon_do_supabase
 
-# OpenAI (ou Gemini)
-VITE_OPENAI_API_KEY=sua_chave_openai
-
-# Alternativa: Google Gemini
-# VITE_GEMINI_API_KEY=sua_chave_gemini
+# Google Gemini
+VITE_GEMINI_API_KEY=sua_chave_gemini
 ```
 
 ### 5. Execute o projeto
@@ -197,16 +193,12 @@ Para personalizar, edite `src/index.css` e `tailwind.config.js`
 
 ## 🤖 Configuração da IA
 
-### OpenAI (Recomendado)
+### Google Gemini
 
-1. Obtenha sua API key em [platform.openai.com](https://platform.openai.com)
-2. Adicione ao `.env`: `VITE_OPENAI_API_KEY=sk-...`
-3. O sistema usa o modelo `gpt-3.5-turbo` por padrão
-
-### Google Gemini (Alternativa)
-
-1. Implemente a integração no arquivo `src/services/ai.service.ts`
-2. A estrutura já está preparada na função `generateResponseWithGemini`
+1. Obtenha sua API key em [ai.google.dev](https://ai.google.dev)
+2. Adicione ao `.env`: `VITE_GEMINI_API_KEY=sua_chave_aqui`
+3. O sistema usa o modelo `gemini-pro` por padrão
+4. A API do Gemini é gratuita para uso moderado
 
 ## 📱 Páginas
 
@@ -253,8 +245,8 @@ npm run build
 - Confirme que o RLS está configurado corretamente
 
 ### IA não responde
-- Verifique se a API key está configurada
-- Confirme que há créditos disponíveis na conta OpenAI
+- Verifique se a VITE_GEMINI_API_KEY está configurada
+- Confirme que a API Key do Gemini está ativa
 - Veja os logs no console do navegador
 
 ### Mensagens não aparecem em tempo real
