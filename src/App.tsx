@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/dashboard/Dashboard';
 import { TicketListPage } from './pages/tickets/TicketList';
 import { NewTicketPage } from './pages/tickets/NewTicket';
 import { TicketDetailPage } from './pages/tickets/TicketDetail';
+import { AllTicketsPage } from './pages/admin/AllTickets';
 
 function App() {
   const { initialize } = useAuthStore();
@@ -38,6 +39,9 @@ function App() {
           <Route path="tickets" element={<TicketListPage />} />
           <Route path="tickets/new" element={<NewTicketPage />} />
           <Route path="tickets/:id" element={<TicketDetailPage />} />
+
+          {/* Admin Routes */}
+          <Route path="admin/tickets" element={<AllTicketsPage />} />
         </Route>
 
         {/* 404 */}
