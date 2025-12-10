@@ -1,12 +1,10 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { AIChatMessage } from '@/types';
 
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true, // Only for development
-});
+// Inicializa o Google Generative AI
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 const SYSTEM_PROMPT = `Você é um assistente de suporte técnico especializado em ajudar alunos.
 Seja sempre prestativo, educado e profissional.
@@ -18,23 +16,46 @@ Use linguagem acessível e evite termos muito técnicos.`;
 export const aiService = {
   async generateResponse(messages: AIChatMessage[]): Promise<string> {
     try {
-      if (!OPENAI_API_KEY) {
+      if (!GEMINI_API_KEY || !genAI) {
         return 'Desculpe, o serviço de IA não está configurado no momento. Por favor, aguarde o atendimento humano.';
       }
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          ...messages,
+      // Usa o modelo Gemini Pro
+      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+      // Converte o histórico de mensagens para o formato do Gemini
+      const chatHistory = messages.map((msg) => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+      }));
+
+      // Inicia o chat com histórico
+      const chat = model.startChat({
+        history: [
+          {
+            role: 'user',
+            parts: [{ text: SYSTEM_PROMPT }],
+          },
+          {
+            role: 'model',
+            parts: [{ text: 'Entendido! Estou aqui para ajudar os alunos da melhor forma possível. Como posso ajudá-lo?' }],
+          },
+          ...chatHistory.slice(0, -1), // Todas menos a última mensagem
         ],
-        temperature: 0.7,
-        max_tokens: 500,
+        generationConfig: {
+          maxOutputTokens: 500,
+          temperature: 0.7,
+        },
       });
 
-      return response.choices[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta.';
+      // Envia a última mensagem
+      const lastMessage = messages[messages.length - 1];
+      const result = await chat.sendMessage(lastMessage.content);
+      const response = await result.response;
+
+      return response.text() || 'Desculpe, não consegui gerar uma resposta.';
     } catch (error) {
-      console.error('AI Service Error:', error);
+      console.error('Gemini AI Service Error:', error);
       return 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou aguarde um atendente humano.';
     }
   },
@@ -45,7 +66,7 @@ export const aiService = {
     suggestedResponse: string;
   }> {
     try {
-      if (!OPENAI_API_KEY) {
+      if (!GEMINI_API_KEY || !genAI) {
         return {
           category: 'Outro',
           priority: 'medium',
@@ -53,26 +74,35 @@ export const aiService = {
         };
       }
 
+      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
       const prompt = `Analise o seguinte ticket de suporte e retorne um JSON com:
 1. category: uma das opções (Técnico, Dúvida, Acesso, Financeiro, Sugestão, Outro)
 2. priority: uma das opções (low, medium, high, urgent)
-3. suggestedResponse: uma resposta inicial útil
+3. suggestedResponse: uma resposta inicial útil e empática
 
 Ticket:
 Título: ${title}
 Descrição: ${description}
 
-Retorne apenas o JSON, sem texto adicional.`;
+IMPORTANTE: Retorne APENAS o JSON, sem texto adicional, sem markdown, sem \`\`\`json. Apenas o objeto JSON puro.`;
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-        max_tokens: 300,
-      });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
 
-      const content = response.choices[0]?.message?.content || '{}';
-      return JSON.parse(content);
+      // Remove possíveis marcadores de código
+      const cleanText = text
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
+
+      const parsed = JSON.parse(cleanText);
+      return {
+        category: parsed.category || 'Outro',
+        priority: parsed.priority || 'medium',
+        suggestedResponse: parsed.suggestedResponse || 'Obrigado por entrar em contato. Estamos analisando seu ticket e responderemos em breve.',
+      };
     } catch (error) {
       console.error('Ticket Analysis Error:', error);
       return {
@@ -81,13 +111,5 @@ Retorne apenas o JSON, sem texto adicional.`;
         suggestedResponse: 'Obrigado por entrar em contato. Estamos analisando seu ticket e responderemos em breve.',
       };
     }
-  },
-
-  // Alternative: Gemini API (if user prefers)
-  async generateResponseWithGemini(_messages: AIChatMessage[]): Promise<string> {
-    // TODO: Implement Gemini API integration
-    // This is a placeholder for Gemini implementation
-    console.log('Gemini API not implemented yet. Using fallback.');
-    return 'Função Gemini em desenvolvimento. Use OpenAI por enquanto.';
   },
 };

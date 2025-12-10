@@ -6,7 +6,7 @@ Guia rápido para colocar o sistema no ar em 5 minutos!
 
 - Node.js 18+ instalado
 - Conta no [Supabase](https://supabase.com) (gratuita)
-- API Key da [OpenAI](https://platform.openai.com) ou [Gemini](https://ai.google.dev)
+- API Key do [Google Gemini](https://ai.google.dev)
 
 ## ⚡ Instalação Rápida
 
@@ -40,7 +40,7 @@ Crie um arquivo `.env` na raiz:
 ```env
 VITE_SUPABASE_URL=sua_url_aqui
 VITE_SUPABASE_ANON_KEY=sua_chave_aqui
-VITE_OPENAI_API_KEY=sk-sua_chave_openai_aqui
+VITE_GEMINI_API_KEY=sua_chave_gemini_aqui
 ```
 
 ### 4. Inicie o sistema (30 seg)
@@ -72,8 +72,8 @@ Acesse: http://localhost:5173
 - Certifique-se de que executou o script SQL
 
 **IA não responde:**
-- Verifique se a OPENAI_API_KEY está correta
-- Confirme que tem créditos na conta OpenAI
+- Verifique se a VITE_GEMINI_API_KEY está correta
+- Confirme que a API Key do Gemini está ativa
 
 **Página em branco:**
 - Abra o console do navegador (F12)
