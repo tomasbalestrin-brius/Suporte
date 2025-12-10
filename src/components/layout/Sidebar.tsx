@@ -1,15 +1,19 @@
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Ticket, LogOut, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { LayoutDashboard, Ticket, LogOut, Sparkles, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 export function Sidebar() {
   const { user, signOut } = useAuthStore();
+  const isAdmin = useIsAdmin();
 
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/tickets', icon: Ticket, label: 'Tickets' },
+    { to: '/tickets', icon: Ticket, label: isAdmin ? 'Meus Tickets' : 'Tickets' },
+    ...(isAdmin ? [{ to: '/admin/tickets', icon: Users, label: 'Todos os Tickets' }] : []),
   ];
 
   return (
@@ -57,7 +61,14 @@ export function Sidebar() {
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">{user?.name}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-medium truncate">{user?.name}</p>
+              {isAdmin && (
+                <Badge variant="default" className="text-xs px-1.5 py-0">
+                  Admin
+                </Badge>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
           </div>
         </div>
