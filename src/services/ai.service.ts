@@ -84,7 +84,7 @@ Retorne apenas o JSON, sem texto adicional.`;
   },
 
   // Alternative: Gemini API (if user prefers)
-  async generateResponseWithGemini(messages: AIChatMessage[]): Promise<string> {
+  async generateResponseWithGemini(_messages: AIChatMessage[]): Promise<string> {
     // TODO: Implement Gemini API integration
     // This is a placeholder for Gemini implementation
     console.log('Gemini API not implemented yet. Using fallback.');

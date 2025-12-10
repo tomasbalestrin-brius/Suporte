@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Send, Bot, User, Loader2, Clock, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2 } from 'lucide-react';
 import { formatDate, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
 import type { Message, AIChatMessage } from '@/types';
 
@@ -130,7 +130,7 @@ export function TicketDetailPage() {
     if (!id) return;
     setUpdating(true);
     try {
-      await updateTicket(id, { status });
+      await updateTicket(id, { status: status as 'open' | 'in_progress' | 'resolved' | 'closed' });
       await loadTicket();
     } catch (error) {
       console.error('Error updating status:', error);

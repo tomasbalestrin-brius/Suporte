@@ -5,7 +5,7 @@ import { useTicketStore } from '@/store/ticketStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Ticket, Clock, CheckCircle2, XCircle, Plus, MessageSquare } from 'lucide-react';
+import { Ticket, Clock, CheckCircle2, Plus, MessageSquare } from 'lucide-react';
 import { formatDate, getStatusColor, getPriorityColor, getStatusLabel } from '@/lib/utils';
 
 export function DashboardPage() {

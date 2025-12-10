@@ -16,7 +16,7 @@ interface TicketState {
   setCurrentTicket: (ticket: Ticket | null) => void;
 }
 
-export const useTicketStore = create<TicketState>((set, get) => ({
+export const useTicketStore = create<TicketState>((set) => ({
   tickets: [],
   currentTicket: null,
   stats: null,
