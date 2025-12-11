@@ -97,7 +97,7 @@ export const aiService = {
       }
 
       // Usa o modelo Gemini 1.5 Pro
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
       // Converte o histórico de mensagens para o formato do Gemini
       const chatHistory = messages.map((msg) => ({
@@ -152,7 +152,7 @@ export const aiService = {
       // Busca conhecimento relevante
       const knowledgeContext = await searchRelevantKnowledge(necessity, product);
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
       const prompt = `Você é um assistente de suporte. Um cliente abriu um ticket com os seguintes dados:
 
@@ -204,7 +204,7 @@ Limite: 200 palavras.`;
         };
       }
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
       const prompt = `Analise o seguinte ticket de suporte e retorne um JSON com:
 1. category: uma das opções (Técnico, Dúvida, Acesso, Financeiro, Sugestão, Outro)
