@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Ticket, Sparkles, BookOpen, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Ticket, BookOpen, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
+import { BethelLogo } from '@/components/ui/BethelLogo';
 
 export function Sidebar() {
   const navigate = useNavigate();
@@ -26,15 +27,7 @@ export function Sidebar() {
     <aside className="w-64 border-r border-border bg-card/50 backdrop-blur-sm flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h2 className="font-bold text-lg">Bethel</h2>
-            <p className="text-xs text-muted-foreground">Suporte</p>
-          </div>
-        </div>
+        <BethelLogo variant="full" className="text-foreground" subtitle="Suporte" />
       </div>
 
       {/* Navigation */}

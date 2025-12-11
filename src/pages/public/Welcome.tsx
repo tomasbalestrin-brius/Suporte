@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, MessageCircle, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BethelLogo } from '@/components/ui/BethelLogo';
 
 interface FAQItem {
   question: string;
@@ -47,15 +48,7 @@ export function WelcomePage() {
       <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Suporte Bethel</h1>
-                <p className="text-sm text-gray-400">Central de Ajuda</p>
-              </div>
-            </div>
+            <BethelLogo variant="full" className="text-white" subtitle="Central de Ajuda" />
             <Link
               to="/login"
               className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors border border-white/20"
