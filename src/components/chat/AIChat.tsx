@@ -7,7 +7,7 @@ export function AIChat() {
   const [messages, setMessages] = useState<AIChatMessage[]>([
     {
       role: 'model',
-      content: 'Olá! 👋 Sou o assistente virtual da Bethel. Como posso ajudar você hoje?',
+      content: 'Olá! 👋 Sou a Sofia, atendente virtual da Bethel. Como posso ajudar você hoje?',
     },
   ]);
   const [input, setInput] = useState('');
@@ -74,7 +74,7 @@ export function AIChat() {
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-white">Assistente IA</h3>
+            <h3 className="font-bold text-white">Atendente Sofia</h3>
             <p className="text-xs text-gray-400">Online agora</p>
           </div>
         </div>
