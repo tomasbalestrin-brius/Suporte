@@ -1,11 +1,11 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { knowledgeService } from './knowledge.service';
 import type { AIChatMessage } from '@/types';
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
-// Inicializa o Google Generative AI
-const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+// Inicializa o OpenAI
+const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY, dangerouslyAllowBrowser: true }) : null;
 
 const SYSTEM_PROMPT = `Você é Sofia, a atendente virtual da Bethel Educação.
 Seja sempre prestativa, educada e profissional.
@@ -92,46 +92,29 @@ export const aiService = {
    */
   async generateResponse(messages: AIChatMessage[]): Promise<string> {
     try {
-      if (!GEMINI_API_KEY || !genAI) {
+      if (!OPENAI_API_KEY || !openai) {
         return 'Desculpe, o serviço de IA não está configurado no momento. Por favor, aguarde o atendimento humano.';
       }
 
-      // Usa o modelo Gemini 1.5 Pro
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+      // Converte mensagens para formato OpenAI
+      const openaiMessages = [
+        { role: 'system' as const, content: SYSTEM_PROMPT },
+        ...messages.map(msg => ({
+          role: (msg.role === 'model' ? 'assistant' : msg.role) as 'user' | 'assistant',
+          content: msg.content,
+        })),
+      ];
 
-      // Converte o histórico de mensagens para o formato do Gemini
-      const chatHistory = messages.map((msg) => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }],
-      }));
-
-      // Inicia o chat com histórico
-      const chat = model.startChat({
-        history: [
-          {
-            role: 'user',
-            parts: [{ text: SYSTEM_PROMPT }],
-          },
-          {
-            role: 'model',
-            parts: [{ text: 'Entendido! Estou aqui para ajudar da melhor forma possível. Como posso ajudá-lo?' }],
-          },
-          ...chatHistory.slice(0, -1), // Todas menos a última mensagem
-        ],
-        generationConfig: {
-          maxOutputTokens: 500,
-          temperature: 0.7,
-        },
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: openaiMessages,
+        max_tokens: 500,
+        temperature: 0.7,
       });
 
-      // Envia a última mensagem
-      const lastMessage = messages[messages.length - 1];
-      const result = await chat.sendMessage(lastMessage.content);
-      const response = await result.response;
-
-      return response.text() || 'Desculpe, não consegui gerar uma resposta.';
+      return completion.choices[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta.';
     } catch (error) {
-      console.error('Gemini AI Service Error:', error);
+      console.error('OpenAI Service Error:', error);
       return 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou aguarde um atendente humano.';
     }
   },
@@ -145,16 +128,14 @@ export const aiService = {
     necessity: string
   ): Promise<string> {
     try {
-      if (!GEMINI_API_KEY || !genAI) {
+      if (!OPENAI_API_KEY || !openai) {
         return `Olá ${customerName}! Recebemos seu ticket e nossa equipe irá analisá-lo em breve. Agradecemos o contato!`;
       }
 
       // Busca conhecimento relevante
       const knowledgeContext = await searchRelevantKnowledge(necessity, product);
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-
-      const prompt = `Você é um assistente de suporte. Um cliente abriu um ticket com os seguintes dados:
+      const prompt = `Você é Sofia, a atendente virtual da Bethel Educação. Um cliente abriu um ticket:
 
 Nome: ${customerName}
 ${product ? `Produto: ${product}` : ''}
@@ -172,15 +153,22 @@ Gere uma resposta inicial útil, empática e profissional:
 1. Cumprimente o cliente pelo nome
 2. Demonstre que entendeu o problema
 3. ${knowledgeContext ? 'Forneça a solução baseada na base de conhecimento' : 'Informe que está analisando e responderá em breve'}
-4. Seja claro e objetivo
+4. Seja clara e objetiva
 5. Mantenha um tom amigável
 
 Limite: 200 palavras.`;
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      });
 
-      return response.text() || `Olá ${customerName}! Recebemos seu ticket e nossa equipe irá analisá-lo em breve.`;
+      return completion.choices[0]?.message?.content || `Olá ${customerName}! Recebemos seu ticket e nossa equipe irá analisá-lo em breve.`;
     } catch (error) {
       console.error('Error generating ticket response:', error);
       return `Olá ${customerName}! Recebemos seu ticket e nossa equipe irá analisá-lo em breve. Agradecemos o contato!`;
@@ -196,15 +184,13 @@ Limite: 200 palavras.`;
     suggestedResponse: string;
   }> {
     try {
-      if (!GEMINI_API_KEY || !genAI) {
+      if (!OPENAI_API_KEY || !openai) {
         return {
           category: 'Outro',
           priority: 'medium',
           suggestedResponse: 'Aguarde, um atendente irá responder em breve.',
         };
       }
-
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
       const prompt = `Analise o seguinte ticket de suporte e retorne um JSON com:
 1. category: uma das opções (Técnico, Dúvida, Acesso, Financeiro, Sugestão, Outro)
@@ -217,9 +203,17 @@ Descrição: ${description}
 
 IMPORTANTE: Retorne APENAS o JSON, sem texto adicional, sem markdown, sem \`\`\`json. Apenas o objeto JSON puro.`;
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: 'Você é um assistente que analisa tickets de suporte e retorna apenas JSON.' },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 300,
+        temperature: 0.5,
+      });
+
+      const text = completion.choices[0]?.message?.content || '{}';
 
       // Remove possíveis marcadores de código
       const cleanText = text
