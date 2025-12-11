@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, MessageCircle, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BethelLogo } from '@/components/ui/BethelLogo';
+import { AIChat } from '@/components/chat/AIChat';
 
 interface FAQItem {
   question: string;
@@ -117,28 +118,9 @@ export function WelcomePage() {
               <h3 className="text-2xl font-bold text-white">Chat com IA</h3>
             </div>
 
-            <div className="rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-6">
-              <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-8 h-8 text-white" />
-                </div>
-                <h4 className="text-xl font-bold text-white mb-2">
-                  Converse com nossa IA
-                </h4>
-                <p className="text-gray-400 mb-6">
-                  Tire suas dúvidas de forma rápida e personalizada
-                </p>
-                <p className="text-sm text-gray-500 mb-6">
-                  O chat com IA estará disponível em breve. Por enquanto, você pode abrir um ticket.
-                </p>
-                <Link
-                  to="/tickets/new"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-medium transition-all shadow-lg shadow-cyan-500/30"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  Abrir Ticket de Suporte
-                </Link>
-              </div>
+            {/* Chat Component - 600px height */}
+            <div className="h-[600px]">
+              <AIChat />
             </div>
 
             {/* Quick Actions */}
@@ -152,7 +134,7 @@ export function WelcomePage() {
                   Abrir Novo Ticket
                 </Link>
                 <a
-                  href="mailto:suporte@example.com"
+                  href="mailto:suporte@bethel.com.br"
                   className="block w-full px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors border border-white/20 text-center"
                 >
                   Enviar Email

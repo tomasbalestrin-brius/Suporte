@@ -42,6 +42,10 @@ export interface Category {
   description: string;
   icon: string;
   color: string;
+  active: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface KnowledgeBase {
@@ -57,7 +61,7 @@ export interface KnowledgeBase {
 }
 
 export interface AIChatMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: 'system' | 'user' | 'assistant' | 'model';
   content: string;
 }
 
