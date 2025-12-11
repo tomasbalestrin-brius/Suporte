@@ -52,7 +52,7 @@ export function WelcomePage() {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Suporte Automatizado</h1>
+                <h1 className="text-xl font-bold text-white">Suporte Bethel</h1>
                 <p className="text-sm text-gray-400">Central de Ajuda</p>
               </div>
             </div>
@@ -174,7 +174,7 @@ export function WelcomePage() {
       <footer className="border-t border-white/10 bg-black/20 backdrop-blur-sm mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-gray-400 text-sm">
-            <p>© 2025 Suporte Automatizado. Todos os direitos reservados.</p>
+            <p>© 2025 Suporte Bethel. Todos os direitos reservados.</p>
             <p className="mt-2">Powered by AI</p>
           </div>
         </div>

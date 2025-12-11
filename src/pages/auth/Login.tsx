@@ -33,7 +33,7 @@ export function LoginPage() {
       <Card className="w-full max-w-md relative glass">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center bg-gradient-primary bg-clip-text text-transparent">
-            Suporte Automatizado
+            Suporte Bethel
           </CardTitle>
           <CardDescription className="text-center">
             Entre com suas credenciais para acessar o sistema

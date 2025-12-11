@@ -31,8 +31,8 @@ export function Sidebar() {
             <Sparkles className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="font-bold text-lg">Suporte</h2>
-            <p className="text-xs text-muted-foreground">Automatizado</p>
+            <h2 className="font-bold text-lg">Bethel</h2>
+            <p className="text-xs text-muted-foreground">Suporte</p>
           </div>
         </div>
       </div>
