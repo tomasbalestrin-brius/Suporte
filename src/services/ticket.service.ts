@@ -8,6 +8,10 @@ export const ticketService = {
     description: string;
     priority: string;
     category: string;
+    customer_name?: string;
+    customer_email?: string;
+    customer_cpf?: string;
+    product?: string;
   }) {
     const { data, error } = await supabase
       .from('tickets')
