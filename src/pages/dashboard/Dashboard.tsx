@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
 import { useTicketStore } from '@/store/ticketStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,15 +9,12 @@ import { formatDate, getStatusColor, getPriorityColor, getStatusLabel } from '@/
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const { tickets, stats, fetchTickets, fetchStats } = useTicketStore();
 
   useEffect(() => {
-    if (user) {
-      fetchTickets(user.id);
-      fetchStats(user.id);
-    }
-  }, [user]);
+    fetchTickets();
+    fetchStats();
+  }, []);
 
   const recentTickets = tickets.slice(0, 5);
 
@@ -29,7 +25,7 @@ export function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
-            Bem-vindo de volta, {user?.name}!
+            Sistema de Suporte Automatizado
           </p>
         </div>
         <Button onClick={() => navigate('/tickets/new')}>

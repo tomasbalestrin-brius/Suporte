@@ -1,19 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { LayoutDashboard, Ticket, LogOut, Sparkles, Users } from 'lucide-react';
+import { LayoutDashboard, Ticket, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 export function Sidebar() {
-  const { user, signOut } = useAuthStore();
-  const isAdmin = useIsAdmin();
-
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/tickets', icon: Ticket, label: isAdmin ? 'Meus Tickets' : 'Tickets' },
-    ...(isAdmin ? [{ to: '/admin/tickets', icon: Users, label: 'Todos os Tickets' }] : []),
+    { to: '/tickets', icon: Ticket, label: 'Tickets' },
   ];
 
   return (
@@ -52,34 +44,11 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* User Info */}
+      {/* Footer */}
       <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-secondary flex items-center justify-center">
-            <span className="text-sm font-bold text-white">
-              {user?.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-medium truncate">{user?.name}</p>
-              {isAdmin && (
-                <Badge variant="default" className="text-xs px-1.5 py-0">
-                  Admin
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-          </div>
-        </div>
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => signOut()}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Sair
-        </Button>
+        <p className="text-xs text-center text-muted-foreground">
+          Sistema de Suporte v1.0
+        </p>
       </div>
     </aside>
   );
