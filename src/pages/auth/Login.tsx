@@ -4,8 +4,9 @@ import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
+import { BethelLogo } from '@/components/ui/BethelLogo';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -31,10 +32,10 @@ export function LoginPage() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.1),rgba(255,255,255,0))]" />
 
       <Card className="w-full max-w-md relative glass">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center bg-gradient-primary bg-clip-text text-transparent">
-            Suporte Automatizado
-          </CardTitle>
+        <CardHeader className="space-y-4">
+          <div className="flex justify-center">
+            <BethelLogo variant="full" subtitle="Suporte" />
+          </div>
           <CardDescription className="text-center">
             Entre com suas credenciais para acessar o sistema
           </CardDescription>

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, MessageCircle, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BethelLogo } from '@/components/ui/BethelLogo';
+import { AIChat } from '@/components/chat/AIChat';
 
 interface FAQItem {
   question: string;
@@ -47,15 +49,7 @@ export function WelcomePage() {
       <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Suporte Automatizado</h1>
-                <p className="text-sm text-gray-400">Central de Ajuda</p>
-              </div>
-            </div>
+            <BethelLogo variant="full" className="text-white" subtitle="Central de Ajuda" />
             <Link
               to="/login"
               className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors border border-white/20"
@@ -124,28 +118,9 @@ export function WelcomePage() {
               <h3 className="text-2xl font-bold text-white">Chat com IA</h3>
             </div>
 
-            <div className="rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-6">
-              <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-8 h-8 text-white" />
-                </div>
-                <h4 className="text-xl font-bold text-white mb-2">
-                  Converse com nossa IA
-                </h4>
-                <p className="text-gray-400 mb-6">
-                  Tire suas dúvidas de forma rápida e personalizada
-                </p>
-                <p className="text-sm text-gray-500 mb-6">
-                  O chat com IA estará disponível em breve. Por enquanto, você pode abrir um ticket.
-                </p>
-                <Link
-                  to="/tickets/new"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-medium transition-all shadow-lg shadow-cyan-500/30"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  Abrir Ticket de Suporte
-                </Link>
-              </div>
+            {/* Chat Component - 600px height */}
+            <div className="h-[600px]">
+              <AIChat />
             </div>
 
             {/* Quick Actions */}
@@ -159,7 +134,7 @@ export function WelcomePage() {
                   Abrir Novo Ticket
                 </Link>
                 <a
-                  href="mailto:suporte@example.com"
+                  href="mailto:suporte@bethel.com.br"
                   className="block w-full px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors border border-white/20 text-center"
                 >
                   Enviar Email
@@ -174,7 +149,7 @@ export function WelcomePage() {
       <footer className="border-t border-white/10 bg-black/20 backdrop-blur-sm mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-gray-400 text-sm">
-            <p>© 2025 Suporte Automatizado. Todos os direitos reservados.</p>
+            <p>© 2025 Suporte Bethel. Todos os direitos reservados.</p>
             <p className="mt-2">Powered by AI</p>
           </div>
         </div>
