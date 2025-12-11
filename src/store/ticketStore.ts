@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { Ticket, TicketStats } from '@/types';
 import { ticketService } from '@/services/ticket.service';
+import { messageService } from '@/services/message.service';
+import { aiService } from '@/services/ai.service';
 
 interface TicketState {
   tickets: Ticket[];
@@ -48,6 +50,26 @@ export const useTicketStore = create<TicketState>((set) => ({
     set({ loading: true });
     try {
       const newTicket = await ticketService.createTicket(ticket);
+
+      // Gera resposta automática da IA
+      try {
+        const aiResponse = await aiService.generateTicketResponse(
+          ticket.customer_name || 'Cliente',
+          ticket.product,
+          ticket.description
+        );
+
+        // Cria mensagem inicial da IA
+        await messageService.createMessage({
+          ticket_id: newTicket.id,
+          content: aiResponse,
+          is_ai: true,
+        });
+      } catch (aiError) {
+        console.error('Erro ao gerar resposta da IA:', aiError);
+        // Continua mesmo se a IA falhar
+      }
+
       set((state) => ({
         tickets: [newTicket, ...state.tickets],
         loading: false,

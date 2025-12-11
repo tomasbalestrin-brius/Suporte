@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Ticket, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Ticket, Sparkles, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function Sidebar() {
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/tickets', icon: Ticket, label: 'Tickets' },
+    { to: '/admin/knowledge', icon: BookOpen, label: 'Base de Conhecimento' },
   ];
 
   return (
