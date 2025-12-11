@@ -15,6 +15,11 @@ export interface Ticket {
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   category: string;
+  // Novos campos para ticket público
+  customer_name?: string;
+  customer_email?: string;
+  customer_cpf?: string;
+  product?: string;
   created_at: string;
   updated_at: string;
   resolved_at?: string;
@@ -37,6 +42,18 @@ export interface Category {
   description: string;
   icon: string;
   color: string;
+}
+
+export interface KnowledgeBase {
+  id: string;
+  title: string;
+  category: string;
+  content: string;
+  keywords: string[];
+  product?: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AIChatMessage {

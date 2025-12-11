@@ -1,31 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
 import { useTicketStore } from '@/store/ticketStore';
 import { categoryService } from '@/services/category.service';
-import { aiService } from '@/services/ai.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Sparkles } from 'lucide-react';
+import { Loader2, ArrowLeft, Ticket as TicketIcon } from 'lucide-react';
 import type { Category } from '@/types';
 
 export function NewTicketPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const { createTicket } = useTicketStore();
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  // Campos do formulário
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerCpf, setCustomerCpf] = useState('');
+  const [product, setProduct] = useState('');
+  const [necessity, setNecessity] = useState(''); // Descrição do problema
   const [category, setCategory] = useState('');
-  const [priority, setPriority] = useState('medium');
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState('');
 
   useEffect(() => {
     loadCategories();
@@ -35,39 +34,53 @@ export function NewTicketPage() {
     try {
       const data = await categoryService.getCategories();
       setCategories(data);
+      if (data.length > 0) {
+        setCategory(data[0].name);
+      }
     } catch (error) {
       console.error('Error loading categories:', error);
     }
   };
 
-  const handleAnalyze = async () => {
-    if (!title || !description) return;
+  const formatCPF = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
 
-    setAnalyzing(true);
-    try {
-      const analysis = await aiService.analyzeTicket(title, description);
-      setCategory(analysis.category);
-      setPriority(analysis.priority);
-      setAiSuggestion(analysis.suggestedResponse);
-    } catch (error) {
-      console.error('Error analyzing ticket:', error);
-    } finally {
-      setAnalyzing(false);
+    // Limita a 11 dígitos
+    const limitedNumbers = numbers.slice(0, 11);
+
+    // Aplica a máscara XXX.XXX.XXX-XX
+    if (limitedNumbers.length <= 3) {
+      return limitedNumbers;
+    } else if (limitedNumbers.length <= 6) {
+      return `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3)}`;
+    } else if (limitedNumbers.length <= 9) {
+      return `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3, 6)}.${limitedNumbers.slice(6)}`;
+    } else {
+      return `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3, 6)}.${limitedNumbers.slice(6, 9)}-${limitedNumbers.slice(9)}`;
     }
+  };
+
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCPF(e.target.value);
+    setCustomerCpf(formatted);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
 
     setLoading(true);
     try {
       const newTicket = await createTicket({
-        user_id: user.id,
-        title,
-        description,
+        user_id: '', // Sem autenticação por enquanto
+        title: `${product} - ${customerName}`,
+        description: necessity,
         category,
-        priority,
+        priority: 'medium',
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_cpf: customerCpf,
+        product,
       });
 
       navigate(`/tickets/${newTicket.id}`);
@@ -80,16 +93,16 @@ export function NewTicketPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto px-4">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Novo Ticket</h1>
+          <h1 className="text-3xl font-bold">Abrir Ticket de Suporte</h1>
           <p className="text-muted-foreground">
-            Descreva seu problema ou dúvida
+            Preencha os dados abaixo para receber atendimento
           </p>
         </div>
       </div>
@@ -97,64 +110,73 @@ export function NewTicketPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card className="glass">
           <CardHeader>
-            <CardTitle>Informações do Ticket</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TicketIcon className="h-5 w-5" />
+              Seus Dados
+            </CardTitle>
             <CardDescription>
-              Preencha os campos abaixo com o máximo de detalhes possível
+              Informe seus dados para que possamos identificar sua compra
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Título</Label>
+              <Label htmlFor="customerName">Nome Completo *</Label>
               <Input
-                id="title"
-                placeholder="Ex: Erro ao fazer login"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                id="customerName"
+                placeholder="Ex: João Silva"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
                 required
                 disabled={loading}
               />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="description">Descrição</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAnalyze}
-                  disabled={!title || !description || analyzing}
-                >
-                  {analyzing ? (
-                    <>
-                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                      Analisando...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-3 w-3" />
-                      Analisar com IA
-                    </>
-                  )}
-                </Button>
-              </div>
-              <Textarea
-                id="description"
-                placeholder="Descreva detalhadamente seu problema ou dúvida..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                disabled={loading}
-                rows={6}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="category">Categoria</Label>
+                <Label htmlFor="customerEmail">Email de Compra *</Label>
+                <Input
+                  id="customerEmail"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customerCpf">CPF *</Label>
+                <Input
+                  id="customerCpf"
+                  placeholder="000.000.000-00"
+                  value={customerCpf}
+                  onChange={handleCpfChange}
+                  required
+                  disabled={loading}
+                  maxLength={14}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="product">Produto Adquirido *</Label>
+                <Input
+                  id="product"
+                  placeholder="Ex: Curso de React Avançado"
+                  value={product}
+                  onChange={(e) => setProduct(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Tipo de Suporte *</Label>
                 <Select value={category} onValueChange={setCategory} required disabled={loading}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma categoria" />
+                    <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((cat) => (
@@ -165,34 +187,34 @@ export function NewTicketPage() {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="priority">Prioridade</Label>
-                <Select value={priority} onValueChange={setPriority} required disabled={loading}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Baixa</SelectItem>
-                    <SelectItem value="medium">Média</SelectItem>
-                    <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="urgent">Urgente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {aiSuggestion && (
-              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <div className="flex items-start gap-2">
-                  <Sparkles className="h-4 w-4 text-primary mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium mb-1">Sugestão da IA:</p>
-                    <p className="text-sm text-muted-foreground">{aiSuggestion}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+        <Card className="glass">
+          <CardHeader>
+            <CardTitle>Descreva sua Necessidade</CardTitle>
+            <CardDescription>
+              Conte-nos o que aconteceu e o que você precisa
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="necessity">Necessidade / Problema *</Label>
+              <Textarea
+                id="necessity"
+                placeholder="Descreva detalhadamente o que aconteceu e o que você precisa...&#10;&#10;Exemplo: Não consigo acessar o curso após a compra. Já verifiquei meu email mas não recebi as credenciais de acesso."
+                value={necessity}
+                onChange={(e) => setNecessity(e.target.value)}
+                required
+                disabled={loading}
+                rows={8}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                Quanto mais detalhes você fornecer, mais rápida e precisa será nossa resposta.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -201,14 +223,18 @@ export function NewTicketPage() {
             type="submit"
             size="lg"
             disabled={loading || !category}
+            className="flex-1 md:flex-none"
           >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Criando...
+                Enviando...
               </>
             ) : (
-              'Criar Ticket'
+              <>
+                <TicketIcon className="mr-2 h-4 w-4" />
+                Abrir Ticket
+              </>
             )}
           </Button>
           <Button
@@ -222,6 +248,17 @@ export function NewTicketPage() {
           </Button>
         </div>
       </form>
+
+      {/* Informação adicional */}
+      <Card className="glass border-primary/20 bg-primary/5">
+        <CardContent className="pt-6">
+          <p className="text-sm text-muted-foreground">
+            <strong>📌 Importante:</strong> Após enviar o ticket, você receberá atendimento automático da nossa IA.
+            Ela irá analisar seu problema e buscar na base de conhecimento a melhor solução.
+            Se necessário, um atendente humano entrará em contato.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
