@@ -1,13 +1,26 @@
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Ticket, Sparkles, BookOpen } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Ticket, Sparkles, BookOpen, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/authStore';
 
 export function Sidebar() {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuthStore();
+
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/tickets', icon: Ticket, label: 'Tickets' },
     { to: '/admin/knowledge', icon: BookOpen, label: 'Base de Conhecimento' },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
     <aside className="w-64 border-r border-border bg-card/50 backdrop-blur-sm flex flex-col">
@@ -45,11 +58,26 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-border">
-        <p className="text-xs text-center text-muted-foreground">
-          Sistema de Suporte v1.0
-        </p>
+      {/* Footer - User Info */}
+      <div className="p-4 border-t border-border space-y-3">
+        {user && (
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/50">
+            <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
+              <User className="h-4 w-4 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{user.name || user.email}</p>
+              <p className="text-xs text-muted-foreground capitalize">{user.role || 'admin'}</p>
+            </div>
+          </div>
+        )}
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+          Sair
+        </button>
       </div>
     </aside>
   );
