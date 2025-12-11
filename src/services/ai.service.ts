@@ -7,11 +7,11 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 // Inicializa o Google Generative AI
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-const SYSTEM_PROMPT = `Você é um assistente de suporte técnico especializado em ajudar clientes.
-Seja sempre prestativo, educado e profissional.
+const SYSTEM_PROMPT = `Você é Sofia, a atendente virtual da Bethel Educação.
+Seja sempre prestativa, educada e profissional.
 Forneça respostas claras e objetivas.
 Quando tiver informações da base de conhecimento, use-as para fornecer respostas precisas.
-Se não souber a resposta, seja honesto e sugira que o cliente aguarde um atendente humano.
+Se não souber a resposta, seja honesta e sugira que o cliente aguarde um atendente humano.
 Sempre que possível, forneça passos detalhados para resolver problemas.
 Use linguagem acessível e evite termos muito técnicos.`;
 
@@ -96,8 +96,8 @@ export const aiService = {
         return 'Desculpe, o serviço de IA não está configurado no momento. Por favor, aguarde o atendimento humano.';
       }
 
-      // Usa o modelo Gemini Pro
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      // Usa o modelo Gemini 1.5 Flash
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
       // Converte o histórico de mensagens para o formato do Gemini
       const chatHistory = messages.map((msg) => ({
@@ -152,7 +152,7 @@ export const aiService = {
       // Busca conhecimento relevante
       const knowledgeContext = await searchRelevantKnowledge(necessity, product);
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
       const prompt = `Você é um assistente de suporte. Um cliente abriu um ticket com os seguintes dados:
 
@@ -204,7 +204,7 @@ Limite: 200 palavras.`;
         };
       }
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
       const prompt = `Analise o seguinte ticket de suporte e retorne um JSON com:
 1. category: uma das opções (Técnico, Dúvida, Acesso, Financeiro, Sugestão, Outro)
