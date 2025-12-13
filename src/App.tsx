@@ -8,6 +8,7 @@ import { useAuthStore } from './store/authStore';
 import { WelcomePage } from './pages/public/Welcome';
 import { LoginPage } from './pages/auth/Login';
 import { NewTicketPage } from './pages/tickets/NewTicket';
+import { TicketSuccessPage } from './pages/tickets/TicketSuccess';
 
 // Protected Pages
 import { DashboardPage } from './pages/dashboard/Dashboard';
@@ -29,6 +30,7 @@ function App() {
         <Route index element={<WelcomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/tickets/new" element={<NewTicketPage />} />
+        <Route path="/tickets/:ticketId/success" element={<TicketSuccessPage />} />
 
         {/* Protected Admin Routes */}
         <Route path="/" element={

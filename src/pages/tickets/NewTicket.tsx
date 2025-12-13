@@ -82,7 +82,7 @@ export function NewTicketPage() {
         product,
       } as any);
 
-      navigate(`/tickets/${newTicket.id}`);
+      navigate(`/tickets/${newTicket.id}/success`);
     } catch (error: any) {
       console.error('Error creating ticket:', error);
       alert('Erro ao criar ticket. Tente novamente.');
