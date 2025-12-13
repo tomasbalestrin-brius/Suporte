@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, MessageCircle, Sparkles } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ChevronDown, ChevronUp, MessageCircle, Sparkles, Search } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { BethelLogo } from '@/components/ui/BethelLogo';
 import { AIChat } from '@/components/chat/AIChat';
 
@@ -37,10 +37,19 @@ const faqs: FAQItem[] = [
 ];
 
 export function WelcomePage() {
+  const navigate = useNavigate();
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
+  const [ticketSearch, setTicketSearch] = useState('');
 
   const toggleFAQ = (index: number) => {
     setExpandedFAQ(expandedFAQ === index ? null : index);
+  };
+
+  const handleTicketSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (ticketSearch.trim()) {
+      navigate(`/tickets/${ticketSearch.trim()}/success`);
+    }
   };
 
   return (
@@ -48,8 +57,31 @@ export function WelcomePage() {
       {/* Header */}
       <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <BethelLogo variant="full" className="text-white" subtitle="Central de Ajuda" />
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              <BethelLogo variant="full" className="text-white" subtitle="Central de Ajuda" />
+
+              {/* Busca de Protocolo */}
+              <form onSubmit={handleTicketSearch} className="hidden md:flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={ticketSearch}
+                    onChange={(e) => setTicketSearch(e.target.value)}
+                    placeholder="Digite o código do protocolo"
+                    className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent w-64"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  Buscar
+                </button>
+              </form>
+            </div>
+
             <Link
               to="/login"
               className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors border border-white/20"
@@ -57,6 +89,26 @@ export function WelcomePage() {
               Login Admin
             </Link>
           </div>
+
+          {/* Mobile Search */}
+          <form onSubmit={handleTicketSearch} className="md:hidden mt-4 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={ticketSearch}
+                onChange={(e) => setTicketSearch(e.target.value)}
+                placeholder="Digite o código do protocolo"
+                className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Buscar
+            </button>
+          </form>
         </div>
       </header>
 
