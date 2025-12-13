@@ -72,7 +72,6 @@ export function NewTicketPage() {
     setLoading(true);
     try {
       const newTicket = await createTicket({
-        user_id: '', // Sem autenticação por enquanto
         title: `${product} - ${customerName}`,
         description: necessity,
         category,
@@ -81,7 +80,7 @@ export function NewTicketPage() {
         customer_email: customerEmail,
         customer_cpf: customerCpf,
         product,
-      });
+      } as any);
 
       navigate(`/tickets/${newTicket.id}`);
     } catch (error: any) {
