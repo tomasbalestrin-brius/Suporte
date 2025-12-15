@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Ticket, TicketStats } from '@/types';
+import { webhookService } from './webhook.service';
 
 export const ticketService = {
   async createTicket(ticket: {
@@ -23,6 +24,12 @@ export const ticketService = {
       .single();
 
     if (error) throw error;
+
+    // Dispara webhook de ticket criado
+    webhookService.notifyTicketCreated(data.id, data).catch((err) => {
+      console.error('Error triggering ticket created webhook:', err);
+    });
+
     return data;
   },
 
@@ -60,6 +67,10 @@ export const ticketService = {
   },
 
   async updateTicket(ticketId: string, updates: Partial<Ticket>) {
+    // Busca ticket atual para comparar status
+    const currentTicket = await this.getTicketById(ticketId);
+    const oldStatus = currentTicket?.status;
+
     const updateData: any = { ...updates };
 
     // If resolving ticket, set resolved_at
@@ -75,6 +86,14 @@ export const ticketService = {
       .single();
 
     if (error) throw error;
+
+    // Se o status mudou, dispara webhook
+    if (updates.status && oldStatus && oldStatus !== updates.status) {
+      webhookService.notifyStatusChange(ticketId, oldStatus, updates.status, data).catch((err) => {
+        console.error('Error triggering status change webhook:', err);
+      });
+    }
+
     return data;
   },
 
@@ -124,6 +143,22 @@ export const ticketService = {
           event: '*',
           schema: 'public',
           table: 'tickets',
+        },
+        callback
+      )
+      .subscribe();
+  },
+
+  subscribeToTicket(ticketId: string, callback: (payload: any) => void) {
+    return supabase
+      .channel(`ticket-${ticketId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tickets',
+          filter: `id=eq.${ticketId}`,
         },
         callback
       )
