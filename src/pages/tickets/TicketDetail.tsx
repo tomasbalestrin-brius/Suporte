@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useTicketStore } from '@/store/ticketStore';
 import { messageService } from '@/services/message.service';
-import { aiService } from '@/services/ai.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2 } from 'lucide-react';
 import { formatDate, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
-import type { Message, AIChatMessage } from '@/types';
+import type { Message } from '@/types';
 
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -84,33 +83,12 @@ export function TicketDetailPage() {
     setSending(true);
 
     try {
-      // Send user message
+      // Send admin message (human response, not AI)
       await messageService.createMessage({
         ticket_id: id,
         user_id: user.id,
         content: userMessageContent,
         is_ai: false,
-      });
-
-      // Get AI response
-      const chatHistory: AIChatMessage[] = [
-        ...messages.map((msg) => ({
-          role: (msg.is_ai ? 'assistant' : 'user') as 'assistant' | 'user',
-          content: msg.content,
-        })),
-        {
-          role: 'user' as const,
-          content: userMessageContent,
-        },
-      ];
-
-      const aiResponse = await aiService.generateResponse(chatHistory);
-
-      // Send AI message
-      await messageService.createMessage({
-        ticket_id: id,
-        content: aiResponse,
-        is_ai: true,
       });
 
       // If ticket is open, change to in_progress
@@ -181,7 +159,7 @@ export function TicketDetailPage() {
                 <div>
                   <CardTitle>Conversa</CardTitle>
                   <CardDescription>
-                    Chat com assistente IA
+                    Resolução e atendimento ao cliente
                   </CardDescription>
                 </div>
                 {currentTicket.status !== 'closed' && currentTicket.status !== 'resolved' && (

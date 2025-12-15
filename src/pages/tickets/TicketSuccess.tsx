@@ -21,6 +21,19 @@ export function TicketSuccessPage() {
 
   useEffect(() => {
     loadTicket();
+
+    // Subscribe to ticket updates for real-time status changes
+    if (!ticketId) return;
+
+    const channel = ticketService.subscribeToTicket(ticketId, (payload) => {
+      if (payload.new) {
+        setTicket(payload.new as Ticket);
+      }
+    });
+
+    return () => {
+      channel?.unsubscribe();
+    };
   }, [ticketId]);
 
   const loadTicket = async () => {
