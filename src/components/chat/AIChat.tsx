@@ -1,9 +1,27 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Sparkles, User } from 'lucide-react';
+import { Send, Loader2, Sparkles, User, AlertCircle, Ticket } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { aiService } from '@/services/ai.service';
 import type { AIChatMessage } from '@/types';
 
+// Keywords that indicate frustration or unresolved issues
+const FRUSTRATION_KEYWORDS = [
+  'não funcionou',
+  'não resolveu',
+  'ainda não',
+  'continua',
+  'mesmo problema',
+  'não consigo',
+  'não deu certo',
+  'erro',
+  'problema',
+  'ajuda',
+  'urgente',
+  'não entendi',
+];
+
 export function AIChat() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<AIChatMessage[]>([
     {
       role: 'model',
@@ -12,8 +30,17 @@ export function AIChat() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [userMessageCount, setUserMessageCount] = useState(0);
+  const [frustrationCount, setFrustrationCount] = useState(0);
+  const [showEscalation, setShowEscalation] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Check if message contains frustration keywords
+  const detectFrustration = (message: string): boolean => {
+    const lowerMessage = message.toLowerCase();
+    return FRUSTRATION_KEYWORDS.some((keyword) => lowerMessage.includes(keyword));
+  };
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -29,10 +56,26 @@ export function AIChat() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    const userMessageContent = input.trim();
     const userMessage: AIChatMessage = {
       role: 'user',
-      content: input.trim(),
+      content: userMessageContent,
     };
+
+    // Track user messages and frustration
+    const newUserCount = userMessageCount + 1;
+    setUserMessageCount(newUserCount);
+
+    const hasFrustration = detectFrustration(userMessageContent);
+    if (hasFrustration) {
+      setFrustrationCount((prev) => prev + 1);
+    }
+
+    // Check if we should show escalation prompt
+    // Show after 3 messages OR 2 frustrated messages
+    if (newUserCount >= 3 || frustrationCount >= 2) {
+      setShowEscalation(true);
+    }
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
@@ -131,6 +174,39 @@ export function AIChat() {
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
                 <span className="text-sm text-gray-400">Digitando...</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Escalation Prompt */}
+        {showEscalation && (
+          <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-xl p-4 mt-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h4 className="text-white font-semibold mb-2">
+                  Precisa de mais ajuda?
+                </h4>
+                <p className="text-gray-300 text-sm mb-4">
+                  Vejo que você já tentou algumas vezes. Que tal falar diretamente com nossa equipe de suporte humano?
+                  Podemos abrir um ticket para você receber atendimento prioritário.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => navigate('/tickets/new')}
+                    className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    Abrir Ticket de Suporte
+                  </button>
+                  <button
+                    onClick={() => setShowEscalation(false)}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-all border border-white/20"
+                  >
+                    Continuar conversando
+                  </button>
+                </div>
               </div>
             </div>
           </div>
