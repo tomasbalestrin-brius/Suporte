@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Ticket, BookOpen, LogOut, User, Webhook, Moon, Sun, Zap, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Ticket, BookOpen, LogOut, User, Webhook, Moon, Sun, Zap, MessageSquare, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { BethelLogo } from '@/components/ui/BethelLogo';
@@ -19,6 +19,7 @@ export function Sidebar() {
     { to: '/admin/webhooks', icon: Webhook, label: 'Webhooks' },
     { to: '/admin/quick-replies', icon: Zap, label: 'Respostas Rápidas' },
     { to: '/admin/ai-feedback', icon: MessageSquare, label: 'Feedback da IA' },
+    { to: '/admin/users', icon: Users, label: 'Gestão de Usuários' },
   ];
 
   const handleLogout = async () => {
