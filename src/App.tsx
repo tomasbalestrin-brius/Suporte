@@ -15,6 +15,7 @@ import { DashboardPage } from './pages/dashboard/Dashboard';
 import { TicketListPage } from './pages/tickets/TicketList';
 import { TicketDetailPage } from './pages/tickets/TicketDetail';
 import { KnowledgeBasePage } from './pages/admin/KnowledgeBase';
+import { WebhooksPage } from './pages/admin/Webhooks';
 
 function App() {
   const { initialize } = useAuthStore();
@@ -42,6 +43,7 @@ function App() {
           <Route path="tickets" element={<TicketListPage />} />
           <Route path="tickets/:id" element={<TicketDetailPage />} />
           <Route path="admin/knowledge" element={<KnowledgeBasePage />} />
+          <Route path="admin/webhooks" element={<WebhooksPage />} />
         </Route>
 
         {/* 404 */}
