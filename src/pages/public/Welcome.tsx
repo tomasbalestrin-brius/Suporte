@@ -3,47 +3,27 @@ import { ChevronDown, ChevronUp, MessageCircle, Sparkles, Search } from 'lucide-
 import { Link, useNavigate } from 'react-router-dom';
 import { BethelLogo } from '@/components/ui/BethelLogo';
 import { AIChat } from '@/components/chat/AIChat';
-
-interface FAQItem {
-  question: string;
-  answer: string;
-}
-
-const faqs: FAQItem[] = [
-  {
-    question: 'Como acesso minha compra?',
-    answer: 'Após a confirmação do pagamento, você receberá um email com as instruções de acesso e suas credenciais. Verifique também sua caixa de spam.',
-  },
-  {
-    question: 'Não recebi o email de acesso, o que faço?',
-    answer: 'Primeiro, verifique sua caixa de spam ou lixo eletrônico. Se não encontrar, entre em contato conosco através do chat ou abrindo um ticket com seus dados de compra.',
-  },
-  {
-    question: 'Como recupero minha senha?',
-    answer: 'Na tela de login, clique em "Esqueci minha senha" e siga as instruções. Um email será enviado com o link para criar uma nova senha.',
-  },
-  {
-    question: 'Tive problemas com o pagamento, o que fazer?',
-    answer: 'Entre em contato conosco informando o número do pedido e forma de pagamento utilizada. Nossa equipe irá verificar e resolver o problema.',
-  },
-  {
-    question: 'Como solicito reembolso?',
-    answer: 'Para solicitar reembolso, abra um ticket informando o motivo da solicitação e os dados da sua compra. Analisaremos seu caso conforme nossa política de reembolso.',
-  },
-  {
-    question: 'Quanto tempo demora para receber resposta?',
-    answer: 'Nosso tempo médio de resposta é de até 24 horas úteis. Casos urgentes são priorizados automaticamente pelo sistema.',
-  },
-];
+import { faqData, faqCategories } from '@/data/faq';
 
 export function WelcomePage() {
   const navigate = useNavigate();
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
   const [ticketSearch, setTicketSearch] = useState('');
+  const [faqCategory, setFaqCategory] = useState('Todos');
+  const [faqSearchTerm, setFaqSearchTerm] = useState('');
 
   const toggleFAQ = (index: number) => {
     setExpandedFAQ(expandedFAQ === index ? null : index);
   };
+
+  // Filter FAQs by category and search term
+  const filteredFaqs = faqData.filter((faq) => {
+    const matchesCategory = faqCategory === 'Todos' || faq.category === faqCategory;
+    const matchesSearch =
+      faq.question.toLowerCase().includes(faqSearchTerm.toLowerCase()) ||
+      faq.answer.toLowerCase().includes(faqSearchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   const handleTicketSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,30 +114,67 @@ export function WelcomePage() {
               <h3 className="text-2xl font-bold text-white">Perguntas Frequentes</h3>
             </div>
 
-            <div className="space-y-4">
-              {faqs.map((faq, index) => (
-                <div
-                  key={index}
-                  className="rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden transition-all hover:bg-white/10"
+            {/* FAQ Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={faqSearchTerm}
+                onChange={(e) => setFaqSearchTerm(e.target.value)}
+                placeholder="Buscar nas perguntas frequentes..."
+                className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Category Filters */}
+            <div className="flex flex-wrap gap-2">
+              {faqCategories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setFaqCategory(category)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    faqCategory === category
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                  }`}
                 >
-                  <button
-                    onClick={() => toggleFAQ(index)}
-                    className="w-full px-6 py-4 flex items-center justify-between text-left"
-                  >
-                    <span className="text-white font-medium pr-4">{faq.question}</span>
-                    {expandedFAQ === index ? (
-                      <ChevronUp className="w-5 h-5 text-cyan-400 flex-shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    )}
-                  </button>
-                  {expandedFAQ === index && (
-                    <div className="px-6 pb-4 text-gray-300 border-t border-white/10 pt-4">
-                      {faq.answer}
-                    </div>
-                  )}
-                </div>
+                  {category}
+                </button>
               ))}
+            </div>
+
+            {/* FAQ List */}
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              {filteredFaqs.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>Nenhuma pergunta encontrada. Tente outro termo de busca.</p>
+                </div>
+              ) : (
+                filteredFaqs.map((faq, index) => (
+                  <div
+                    key={faq.id}
+                    className="rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden transition-all hover:bg-white/10"
+                  >
+                    <button
+                      onClick={() => toggleFAQ(index)}
+                      className="w-full px-6 py-4 flex items-center justify-between text-left"
+                    >
+                      <span className="text-white font-medium pr-4">{faq.question}</span>
+                      {expandedFAQ === index ? (
+                        <ChevronUp className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      )}
+                    </button>
+                    {expandedFAQ === index && (
+                      <div className="px-6 pb-4 text-gray-300 border-t border-white/10 pt-4">
+                        <div className="whitespace-pre-wrap">{faq.answer}</div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -186,7 +203,7 @@ export function WelcomePage() {
                   Abrir Novo Ticket
                 </Link>
                 <a
-                  href="mailto:suporte@bethel.com.br"
+                  href="mailto:suporte@betheleducacao.com.br"
                   className="block w-full px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors border border-white/20 text-center"
                 >
                   Enviar Email
