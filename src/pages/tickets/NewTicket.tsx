@@ -261,3 +261,5 @@ export function NewTicketPage() {
     </div>
   );
 }
+
+export default NewTicketPage;

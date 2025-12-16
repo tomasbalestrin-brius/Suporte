@@ -199,3 +199,5 @@ export function TicketListPage() {
     </div>
   );
 }
+
+export default TicketListPage;
