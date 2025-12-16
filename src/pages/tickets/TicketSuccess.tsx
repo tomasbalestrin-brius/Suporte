@@ -87,6 +87,9 @@ export function TicketSuccessPage() {
               <p className="text-white text-lg">
                 Nosso time entrará em contato em até <strong className="text-yellow-400">24 horas</strong>
               </p>
+              <p className="text-sm text-gray-400 mt-1">
+                Segunda à Sexta-feira
+              </p>
               <p className="text-sm text-gray-400 mt-2">
                 Você receberá atualizações no email: <strong className="text-white">{ticket?.customer_email}</strong>
               </p>

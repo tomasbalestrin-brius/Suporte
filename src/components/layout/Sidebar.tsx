@@ -25,12 +25,18 @@ export function Sidebar() {
   ];
 
   const handleLogout = async () => {
+    console.log('Logout button clicked');
     try {
       await signOut();
       navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
     }
+  };
+
+  const handleThemeToggle = () => {
+    console.log('Theme toggle clicked, current theme:', theme);
+    toggleTheme();
   };
 
   return (
@@ -80,8 +86,9 @@ export function Sidebar() {
           </div>
         )}
         <button
-          onClick={toggleTheme}
-          className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          type="button"
+          onClick={handleThemeToggle}
+          className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
         >
           {theme === 'dark' ? (
             <>
@@ -96,8 +103,9 @@ export function Sidebar() {
           )}
         </button>
         <button
+          type="button"
           onClick={handleLogout}
-          className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
         >
           <LogOut className="h-4 w-4" />
           Sair
