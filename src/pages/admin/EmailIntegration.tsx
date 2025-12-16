@@ -93,6 +93,22 @@ export function EmailIntegrationPage() {
     }
   };
 
+  const [syncing, setSyncing] = useState<string | null>(null);
+
+  const handleSync = async (id: string) => {
+    try {
+      setSyncing(id);
+      const result = await emailIntegrationService.syncEmailsToTickets(id);
+      alert(`Sincronização concluída!\n\n${result.processed} emails processados\n${result.created} tickets criados\n${result.errors} erros`);
+      await loadIntegrations();
+    } catch (error) {
+      console.error('Error syncing:', error);
+      alert('Erro ao sincronizar emails. Verifique o console para detalhes.');
+    } finally {
+      setSyncing(null);
+    }
+  };
+
   const getProviderBadge = (provider: string) => {
     if (provider === 'gmail') {
       return (
@@ -306,6 +322,19 @@ export function EmailIntegrationPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleSync(integration.id!)}
+                      disabled={syncing === integration.id || !integration.active}
+                      title="Sincronizar agora"
+                    >
+                      {syncing === integration.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                    </Button>
                     <Button
                       size="icon"
                       variant="ghost"
