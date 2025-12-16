@@ -25,6 +25,10 @@ export const faqData: FAQItem[] = [
 • Link: www.usecouply.app/login
 • Senha padrão: Couply@2025
 
+**AutentiQ:**
+• Link: www.autentiq.app/login
+• Senha padrão: Autentiq@2025
+
 Use o e-mail que você fez a compra como login.`,
     category: 'Acesso'
   },
@@ -66,7 +70,7 @@ Você recebe aviso por e-mail no mês de expiração.`,
     question: '🔄 Como funciona o reembolso?',
     answer: `• **Prazo:** 7 dias de garantia
 • **Como solicitar:** Pela plataforma onde comprou (Hotmart ou Pagtrust)
-• **Parcelado:** Se pedir nos primeiros 30 dias, todas as parcelas são canceladas`,
+• **Parcelado:** Ao solicitar reembolso dentro de 7 dias, todas as parcelas são canceladas`,
     category: 'Pagamento'
   },
   {
@@ -149,7 +153,7 @@ Recompre pela página de vendas normal.
   {
     id: '13',
     question: '💰 Produtos com créditos - como funciona?',
-    answer: `**Quais produtos:** Script GO e AutentiQ
+    answer: `**Quais produtos:** Script GO, Couply e AutentiQ
 
 **Como funciona:**
 • Vem com plano base incluído
