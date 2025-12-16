@@ -141,6 +141,7 @@ export const instagramIntegrationService = {
     // TODO: Implementar chamada para Instagram Graph API
     // GET https://graph.instagram.com/me?fields=id,username&access_token={access_token}
 
+    console.log('Fetching Instagram profile with token:', accessToken);
     throw new Error('Instagram profile fetching not implemented - requires backend integration');
   },
 

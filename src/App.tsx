@@ -27,6 +27,8 @@ const WebhooksPage = lazy(() => import('./pages/admin/Webhooks'));
 const QuickRepliesPage = lazy(() => import('./pages/admin/QuickReplies'));
 const AIFeedbackPage = lazy(() => import('./pages/admin/AIFeedback'));
 const UsersPage = lazy(() => import('./pages/admin/Users'));
+const EmailIntegrationPage = lazy(() => import('./pages/admin/EmailIntegration'));
+const InstagramIntegrationPage = lazy(() => import('./pages/admin/InstagramIntegration'));
 
 function App() {
   const { initialize } = useAuthStore();
@@ -59,6 +61,8 @@ function App() {
             <Route path="admin/quick-replies" element={<QuickRepliesPage />} />
             <Route path="admin/ai-feedback" element={<AIFeedbackPage />} />
             <Route path="admin/users" element={<UsersPage />} />
+            <Route path="admin/email-integration" element={<EmailIntegrationPage />} />
+            <Route path="admin/instagram-integration" element={<InstagramIntegrationPage />} />
           </Route>
 
           {/* 404 */}

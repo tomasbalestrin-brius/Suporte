@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { emailIntegrationService, type EmailIntegration } from '@/services/emailIntegration.service';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Mail,
-  Plus,
   Trash2,
   RefreshCw,
   Check,
-  X,
   Loader2,
   AlertCircle,
   ExternalLink,
