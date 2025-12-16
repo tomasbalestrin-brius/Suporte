@@ -44,79 +44,99 @@ export function useNotifications() {
   useEffect(() => {
     if (!user) return;
 
-    // Subscribe to all ticket updates
-    const channel = supabase
-      .channel('ticket-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tickets',
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            addNotification({
-              title: 'Novo Ticket',
-              message: `Um novo ticket foi criado: ${payload.new.title}`,
-              type: 'info',
-              ticket_id: payload.new.id,
-              link: `/tickets/${payload.new.id}`,
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            // Only notify about status changes
-            if (payload.old.status !== payload.new.status) {
-              addNotification({
-                title: 'Status Atualizado',
-                message: `Ticket "${payload.new.title}" mudou para ${getStatusLabel(payload.new.status)}`,
-                type: 'success',
-                ticket_id: payload.new.id,
-                link: `/tickets/${payload.new.id}`,
-              });
+    let channel: any;
+    let messagesChannel: any;
+
+    try {
+      // Subscribe to all ticket updates
+      channel = supabase
+        .channel('ticket-notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tickets',
+          },
+          (payload) => {
+            try {
+              if (payload.eventType === 'INSERT') {
+                addNotification({
+                  title: 'Novo Ticket',
+                  message: `Um novo ticket foi criado: ${payload.new.title}`,
+                  type: 'info',
+                  ticket_id: payload.new.id,
+                  link: `/tickets/${payload.new.id}`,
+                });
+              } else if (payload.eventType === 'UPDATE') {
+                // Only notify about status changes
+                if (payload.old.status !== payload.new.status) {
+                  addNotification({
+                    title: 'Status Atualizado',
+                    message: `Ticket "${payload.new.title}" mudou para ${getStatusLabel(payload.new.status)}`,
+                    type: 'success',
+                    ticket_id: payload.new.id,
+                    link: `/tickets/${payload.new.id}`,
+                  });
+                }
+              }
+            } catch (error) {
+              console.error('Error processing ticket notification:', error);
             }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    // Subscribe to new messages
-    const messagesChannel = supabase
-      .channel('message-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-        },
-        async (payload) => {
-          // Don't notify about own messages
-          if (payload.new.user_id === user.id) return;
+      // Subscribe to new messages
+      messagesChannel = supabase
+        .channel('message-notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+          },
+          async (payload) => {
+            try {
+              // Don't notify about own messages
+              if (payload.new.user_id === user.id) return;
 
-          // Fetch ticket info
-          const { data: ticket } = await supabase
-            .from('tickets')
-            .select('title, protocol')
-            .eq('id', payload.new.ticket_id)
-            .single();
+              // Fetch ticket info
+              const { data: ticket } = await supabase
+                .from('tickets')
+                .select('title, protocol')
+                .eq('id', payload.new.ticket_id)
+                .single();
 
-          if (ticket) {
-            addNotification({
-              title: 'Nova Mensagem',
-              message: `Nova mensagem no ticket "${ticket.title}"`,
-              type: 'info',
-              ticket_id: payload.new.ticket_id,
-              link: `/tickets/${payload.new.ticket_id}`,
-            });
+              if (ticket) {
+                addNotification({
+                  title: 'Nova Mensagem',
+                  message: `Nova mensagem no ticket "${ticket.title}"`,
+                  type: 'info',
+                  ticket_id: payload.new.ticket_id,
+                  link: `/tickets/${payload.new.ticket_id}`,
+                });
+              }
+            } catch (error) {
+              console.error('Error processing message notification:', error);
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    } catch (error) {
+      console.error('Error setting up notification channels:', error);
+    }
 
     return () => {
-      channel.unsubscribe();
-      messagesChannel.unsubscribe();
+      try {
+        if (channel) channel.unsubscribe();
+        if (messagesChannel) messagesChannel.unsubscribe();
+      } catch (error) {
+        console.error('Error unsubscribing channels:', error);
+      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'read' | 'created_at'>) => {
