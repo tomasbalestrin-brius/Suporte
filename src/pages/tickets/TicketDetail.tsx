@@ -3,12 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useTicketStore } from '@/store/ticketStore';
 import { messageService } from '@/services/message.service';
+import { aiFeedbackService } from '@/services/aiFeedback.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { formatDate, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
 import type { Message } from '@/types';
 
@@ -22,6 +23,7 @@ export function TicketDetailPage() {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'positive' | 'negative'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,6 +67,20 @@ export function TicketDetailPage() {
     try {
       const data = await messageService.getMessages(id);
       setMessages(data);
+
+      // Load feedback for AI messages
+      const feedbackMap: Record<string, 'positive' | 'negative'> = {};
+      for (const message of data.filter(m => m.is_ai)) {
+        try {
+          const feedback = await aiFeedbackService.getFeedbackByMessage(message.id);
+          if (feedback) {
+            feedbackMap[message.id] = feedback.rating;
+          }
+        } catch (error) {
+          // Ignore errors for individual messages
+        }
+      }
+      setMessageFeedback(feedbackMap);
     } catch (error) {
       console.error('Error loading messages:', error);
     }
@@ -114,6 +130,35 @@ export function TicketDetailPage() {
       console.error('Error updating status:', error);
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleFeedback = async (messageId: string, rating: 'positive' | 'negative') => {
+    if (!id) return;
+
+    try {
+      // Check if feedback already exists
+      const existingFeedback = await aiFeedbackService.getFeedbackByMessage(messageId);
+
+      if (existingFeedback) {
+        // Update existing feedback
+        await aiFeedbackService.updateFeedback(existingFeedback.id!, { rating });
+      } else {
+        // Create new feedback
+        await aiFeedbackService.submitFeedback({
+          ticket_id: id,
+          message_id: messageId,
+          rating,
+        });
+      }
+
+      // Update local state
+      setMessageFeedback(prev => ({
+        ...prev,
+        [messageId]: rating,
+      }));
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
     }
   };
 
@@ -214,9 +259,37 @@ export function TicketDetailPage() {
                         }`}>
                           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                         </div>
-                        <span className="text-xs text-muted-foreground mt-1">
-                          {formatDate(message.created_at)}
-                        </span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(message.created_at)}
+                          </span>
+                          {message.is_ai && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleFeedback(message.id, 'positive')}
+                                className={`p-1 rounded hover:bg-muted transition-colors ${
+                                  messageFeedback[message.id] === 'positive'
+                                    ? 'text-green-500'
+                                    : 'text-muted-foreground'
+                                }`}
+                                title="Resposta útil"
+                              >
+                                <ThumbsUp className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={() => handleFeedback(message.id, 'negative')}
+                                className={`p-1 rounded hover:bg-muted transition-colors ${
+                                  messageFeedback[message.id] === 'negative'
+                                    ? 'text-red-500'
+                                    : 'text-muted-foreground'
+                                }`}
+                                title="Resposta não útil"
+                              >
+                                <ThumbsDown className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))

@@ -25,6 +25,7 @@ const TicketDetailPage = lazy(() => import('./pages/tickets/TicketDetail'));
 const KnowledgeBasePage = lazy(() => import('./pages/admin/KnowledgeBase'));
 const WebhooksPage = lazy(() => import('./pages/admin/Webhooks'));
 const QuickRepliesPage = lazy(() => import('./pages/admin/QuickReplies'));
+const AIFeedbackPage = lazy(() => import('./pages/admin/AIFeedback'));
 
 function App() {
   const { initialize } = useAuthStore();
@@ -55,6 +56,7 @@ function App() {
             <Route path="admin/knowledge" element={<KnowledgeBasePage />} />
             <Route path="admin/webhooks" element={<WebhooksPage />} />
             <Route path="admin/quick-replies" element={<QuickRepliesPage />} />
+            <Route path="admin/ai-feedback" element={<AIFeedbackPage />} />
           </Route>
 
           {/* 404 */}
