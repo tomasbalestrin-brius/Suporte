@@ -384,3 +384,5 @@ export function KnowledgeBasePage() {
     </div>
   );
 }
+
+export default KnowledgeBasePage;

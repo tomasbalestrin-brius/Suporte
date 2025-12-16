@@ -313,3 +313,5 @@ export function TicketDetailPage() {
     </div>
   );
 }
+
+export default TicketDetailPage;

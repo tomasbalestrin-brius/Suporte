@@ -1,12 +1,14 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Ticket, BookOpen, LogOut, User, Webhook } from 'lucide-react';
+import { LayoutDashboard, Ticket, BookOpen, LogOut, User, Webhook, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { BethelLogo } from '@/components/ui/BethelLogo';
+import { useTheme } from '@/hooks/useTheme';
 
 export function Sidebar() {
   const navigate = useNavigate();
   const { user, signOut } = useAuthStore();
+  const { theme, toggleTheme } = useTheme();
 
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -65,6 +67,22 @@ export function Sidebar() {
             </div>
           </div>
         )}
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        >
+          {theme === 'dark' ? (
+            <>
+              <Sun className="h-4 w-4" />
+              Modo Claro
+            </>
+          ) : (
+            <>
+              <Moon className="h-4 w-4" />
+              Modo Escuro
+            </>
+          )}
+        </button>
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"

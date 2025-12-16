@@ -228,3 +228,5 @@ export function TicketSuccessPage() {
     </div>
   );
 }
+
+export default TicketSuccessPage;
