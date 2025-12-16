@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
+import { ToastContainer } from '@/components/notifications/ToastContainer';
 
 export function Layout() {
   return (
@@ -10,6 +11,7 @@ export function Layout() {
           <Outlet />
         </div>
       </main>
+      <ToastContainer />
     </div>
   );
 }

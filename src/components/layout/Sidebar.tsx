@@ -4,11 +4,13 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { BethelLogo } from '@/components/ui/BethelLogo';
 import { useTheme } from '@/hooks/useTheme';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export function Sidebar() {
   const navigate = useNavigate();
   const { user, signOut } = useAuthStore();
   const { theme, toggleTheme } = useTheme();
+  const { unreadCount } = useNotifications();
 
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -43,7 +45,7 @@ export function Sidebar() {
             to={item.to}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg transition-all',
+                'flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative',
                 isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -52,6 +54,11 @@ export function Sidebar() {
           >
             <item.icon className="h-5 w-5" />
             <span className="font-medium">{item.label}</span>
+            {item.to === '/tickets' && unreadCount > 0 && (
+              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
