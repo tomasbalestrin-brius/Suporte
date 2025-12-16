@@ -29,6 +29,7 @@ const AIFeedbackPage = lazy(() => import('./pages/admin/AIFeedback'));
 const UsersPage = lazy(() => import('./pages/admin/Users'));
 const EmailIntegrationPage = lazy(() => import('./pages/admin/EmailIntegration'));
 const InstagramIntegrationPage = lazy(() => import('./pages/admin/InstagramIntegration'));
+const GmailCallbackPage = lazy(() => import('./pages/auth/GmailCallback'));
 
 function App() {
   const { initialize } = useAuthStore();
@@ -46,6 +47,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/tickets/new" element={<NewTicketPage />} />
           <Route path="/tickets/:ticketId/success" element={<TicketSuccessPage />} />
+          <Route path="/auth/gmail/callback" element={<GmailCallbackPage />} />
 
           {/* Protected Admin Routes */}
           <Route path="/" element={

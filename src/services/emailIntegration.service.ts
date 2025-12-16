@@ -33,6 +33,11 @@ export interface EmailMessage {
   }>;
 }
 
+// Credenciais OAuth do Google
+const GOOGLE_CLIENT_ID = '10322214062-3anlmji52o15ud6bojpdeltbvlb2seak.apps.googleusercontent.com';
+const GOOGLE_CLIENT_SECRET = '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';
+// const GOOGLE_PROJECT_ID = 'helical-song-481414-n3'; // Mantido para referência
+
 export const emailIntegrationService = {
   /**
    * Busca todas as integrações do usuário
@@ -124,21 +129,25 @@ export const emailIntegrationService = {
 
   /**
    * Inicia fluxo OAuth para Gmail
-   * NOTA: Esta é uma implementação de referência
-   * Em produção, você precisará configurar OAuth no Google Cloud Console
    */
   getGmailOAuthUrl(): string {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_CLIENT_ID';
-    const redirectUri = `${window.location.origin}/api/oauth/gmail/callback`;
-    const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send');
+    const redirectUri = `${window.location.origin}/auth/gmail/callback`;
+    const scopes = [
+      'https://www.googleapis.com/auth/gmail.readonly',
+      'https://www.googleapis.com/auth/gmail.send',
+      'https://www.googleapis.com/auth/gmail.modify',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+    ];
 
     return `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}&` +
+      `client_id=${GOOGLE_CLIENT_ID}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `response_type=code&` +
-      `scope=${scope}&` +
+      `scope=${encodeURIComponent(scopes.join(' '))}&` +
       `access_type=offline&` +
-      `prompt=consent`;
+      `prompt=consent&` +
+      `state=gmail_integration`;
   },
 
   /**
@@ -160,38 +169,289 @@ export const emailIntegrationService = {
   },
 
   /**
-   * Busca emails não lidos (simulação - requer implementação backend)
-   * Em produção, isso seria feito via webhook ou polling no backend
+   * Troca código OAuth por tokens de acesso
+   */
+  async exchangeCodeForTokens(code: string): Promise<{
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+    email: string;
+  }> {
+    const redirectUri = `${window.location.origin}/auth/gmail/callback`;
+
+    // Troca código por tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error('Failed to exchange code for tokens');
+    }
+
+    const tokens = await tokenResponse.json();
+
+    // Busca informações do usuário
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+
+    if (!userInfoResponse.ok) {
+      throw new Error('Failed to fetch user info');
+    }
+
+    const userInfo = await userInfoResponse.json();
+
+    return {
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_in: tokens.expires_in,
+      email: userInfo.email,
+    };
+  },
+
+  /**
+   * Atualiza access token usando refresh token
+   */
+  async refreshAccessToken(refreshToken: string): Promise<{ access_token: string; expires_in: number }> {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        refresh_token: refreshToken,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to refresh access token');
+    }
+
+    const data = await response.json();
+    return {
+      access_token: data.access_token,
+      expires_in: data.expires_in,
+    };
+  },
+
+  /**
+   * Garante que o token está válido, renovando se necessário
+   */
+  async ensureValidToken(integration: EmailIntegration): Promise<string> {
+    if (!integration.token_expires_at || !integration.refresh_token) {
+      return integration.access_token;
+    }
+
+    const expiresAt = new Date(integration.token_expires_at);
+    const now = new Date();
+
+    // Se o token expira em menos de 5 minutos, renova
+    if (expiresAt.getTime() - now.getTime() < 5 * 60 * 1000) {
+      const { access_token, expires_in } = await this.refreshAccessToken(integration.refresh_token);
+
+      // Atualiza no banco
+      await this.updateIntegration(integration.id!, {
+        access_token,
+        token_expires_at: new Date(Date.now() + expires_in * 1000).toISOString(),
+      });
+
+      return access_token;
+    }
+
+    return integration.access_token;
+  },
+
+  /**
+   * Busca emails não lidos do Gmail
    */
   async fetchUnreadEmails(integrationId: string): Promise<EmailMessage[]> {
     const integration = await this.getIntegration(integrationId);
     if (!integration) throw new Error('Integration not found');
 
-    // TODO: Implementar chamada real para API do Gmail/Outlook
-    // Por enquanto, retorna array vazio
-    console.log(`Fetching unread emails for ${integration.provider}...`);
+    if (integration.provider !== 'gmail') {
+      throw new Error('Only Gmail is supported for now');
+    }
 
-    return [];
+    const accessToken = await this.ensureValidToken(integration);
+
+    // Busca mensagens não lidas
+    const messagesResponse = await fetch(
+      'https://gmail.googleapis.com/gmail/v1/users/me/messages?q=is:unread&maxResults=50',
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    if (!messagesResponse.ok) {
+      throw new Error('Failed to fetch messages from Gmail');
+    }
+
+    const messagesData = await messagesResponse.json();
+    const messages = messagesData.messages || [];
+
+    // Busca detalhes de cada mensagem
+    const emailMessages: EmailMessage[] = [];
+
+    for (const msg of messages) {
+      const detailResponse = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+
+      if (!detailResponse.ok) continue;
+
+      const detail = await detailResponse.json();
+      const headers = detail.payload.headers;
+
+      const from = headers.find((h: any) => h.name.toLowerCase() === 'from')?.value || '';
+      const to = headers.find((h: any) => h.name.toLowerCase() === 'to')?.value || '';
+      const subject = headers.find((h: any) => h.name.toLowerCase() === 'subject')?.value || '';
+      const date = headers.find((h: any) => h.name.toLowerCase() === 'date')?.value || '';
+
+      // Extrai corpo do email
+      let body = '';
+      if (detail.payload.parts) {
+        const textPart = detail.payload.parts.find((p: any) => p.mimeType === 'text/plain');
+        if (textPart && textPart.body.data) {
+          body = atob(textPart.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+        }
+      } else if (detail.payload.body.data) {
+        body = atob(detail.payload.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+      }
+
+      emailMessages.push({
+        id: detail.id,
+        threadId: detail.threadId,
+        from,
+        to,
+        subject,
+        body,
+        receivedAt: date,
+      });
+    }
+
+    return emailMessages;
   },
 
   /**
-   * Envia um email de resposta
-   * NOTA: Requer implementação backend com as credenciais OAuth
+   * Envia um email de resposta via Gmail
    */
   async sendEmail(integrationId: string, to: string, subject: string, body: string, threadId?: string): Promise<void> {
     const integration = await this.getIntegration(integrationId);
     if (!integration) throw new Error('Integration not found');
 
-    // TODO: Implementar envio real via API do Gmail/Outlook
-    console.log(`Sending email via ${integration.provider}...`, {
-      to,
-      subject,
+    if (integration.provider !== 'gmail') {
+      throw new Error('Only Gmail is supported for now');
+    }
+
+    const accessToken = await this.ensureValidToken(integration);
+
+    // Cria o email no formato RFC 2822
+    const emailLines = [
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      'Content-Type: text/plain; charset=utf-8',
+      '',
       body,
-      threadId,
+    ];
+
+    const email = emailLines.join('\r\n');
+    const encodedEmail = btoa(email).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    const url = threadId
+      ? `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`
+      : `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`;
+
+    const payload: any = {
+      raw: encodedEmail,
+    };
+
+    if (threadId) {
+      payload.threadId = threadId;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
 
-    // Em produção, fazer chamada para seu backend que usa as credenciais OAuth
-    throw new Error('Email sending not implemented yet - requires backend integration');
+    if (!response.ok) {
+      throw new Error('Failed to send email');
+    }
+  },
+
+  /**
+   * Sincroniza emails e cria tickets automaticamente
+   */
+  async syncEmailsToTickets(integrationId: string): Promise<{
+    processed: number;
+    created: number;
+    errors: number;
+  }> {
+    try {
+      const emails = await this.fetchUnreadEmails(integrationId);
+      let created = 0;
+      let errors = 0;
+
+      for (const email of emails) {
+        try {
+          // Verifica se já existe um ticket para este email
+          const { data: existingMapping } = await supabase
+            .from('conversation_mappings')
+            .select('ticket_id')
+            .eq('source', 'email')
+            .eq('external_id', email.threadId)
+            .single();
+
+          if (existingMapping) {
+            // Já existe ticket para este thread, adiciona como mensagem
+            await supabase.from('messages').insert({
+              ticket_id: existingMapping.ticket_id,
+              content: email.body,
+              sender_name: email.from,
+              sender_email: email.from,
+              is_internal: false,
+            });
+          } else {
+            // Cria novo ticket
+            await this.createTicketFromEmail(email, integrationId);
+            created++;
+          }
+        } catch (error) {
+          console.error('Error processing email:', error);
+          errors++;
+        }
+      }
+
+      // Atualiza última sincronização
+      await this.updateIntegration(integrationId, {
+        last_sync_at: new Date().toISOString(),
+      });
+
+      return {
+        processed: emails.length,
+        created,
+        errors,
+      };
+    } catch (error) {
+      console.error('Sync error:', error);
+      throw error;
+    }
   },
 
   /**
