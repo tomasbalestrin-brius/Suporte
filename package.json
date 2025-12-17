@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "supabase:login": "supabase login",
+    "supabase:link": "supabase link",
+    "supabase:deploy": "supabase functions deploy sync-emails",
+    "supabase:logs": "supabase functions logs sync-emails --follow",
+    "supabase:test": "supabase functions invoke sync-emails --no-verify-jwt"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",

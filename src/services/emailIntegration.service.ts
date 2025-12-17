@@ -396,6 +396,30 @@ export const emailIntegrationService = {
   },
 
   /**
+   * Marca um email como lido
+   */
+  async markEmailAsRead(integrationId: string, messageId: string): Promise<void> {
+    const integration = await this.getIntegration(integrationId);
+    if (!integration) throw new Error('Integration not found');
+
+    const accessToken = await this.ensureValidToken(integration);
+
+    await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          removeLabelIds: ['UNREAD'],
+        }),
+      }
+    );
+  },
+
+  /**
    * Sincroniza emails e cria tickets automaticamente
    */
   async syncEmailsToTickets(integrationId: string): Promise<{
@@ -420,17 +444,27 @@ export const emailIntegrationService = {
 
           if (existingMapping) {
             // Já existe ticket para este thread, adiciona como mensagem
+            const fromMatch = email.from.match(/^(.+?)\s*<(.+?)>$/);
+            const senderName = fromMatch ? fromMatch[1].trim().replace(/['"]/g, '') : email.from.split('@')[0];
+            const senderEmail = fromMatch ? fromMatch[2].trim() : email.from.trim();
+
             await supabase.from('messages').insert({
               ticket_id: existingMapping.ticket_id,
               content: email.body,
-              sender_name: email.from,
-              sender_email: email.from,
+              sender_name: senderName,
+              sender_email: senderEmail,
               is_internal: false,
             });
+
+            // Marca email como lido
+            await this.markEmailAsRead(integrationId, email.id);
           } else {
             // Cria novo ticket
             await this.createTicketFromEmail(email, integrationId);
             created++;
+
+            // Marca email como lido
+            await this.markEmailAsRead(integrationId, email.id);
           }
         } catch (error) {
           console.error('Error processing email:', error);
@@ -458,15 +492,31 @@ export const emailIntegrationService = {
    * Cria um ticket a partir de um email
    */
   async createTicketFromEmail(email: EmailMessage, integrationId: string): Promise<string> {
+    // Extrai nome e email do remetente
+    // Formato comum: "Nome Completo <email@exemplo.com>" ou só "email@exemplo.com"
+    const fromMatch = email.from.match(/^(.+?)\s*<(.+?)>$/);
+    let customerName = '';
+    let customerEmail = '';
+
+    if (fromMatch) {
+      customerName = fromMatch[1].trim().replace(/['"]/g, ''); // Remove aspas
+      customerEmail = fromMatch[2].trim();
+    } else {
+      customerEmail = email.from.trim();
+      customerName = customerEmail.split('@')[0]; // Usa parte antes do @ como nome
+    }
+
     // Cria o ticket
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .insert({
-        title: email.subject,
-        description: `Email de: ${email.from}\n\n${email.body}`,
-        category: 'Email',
+        title: email.subject || 'Sem assunto',
+        description: email.body || 'Email sem conteúdo',
+        category: 'Suporte',
         priority: 'medium',
         status: 'open',
+        customer_name: customerName,
+        customer_email: customerEmail,
       })
       .select()
       .single();
@@ -481,9 +531,11 @@ export const emailIntegrationService = {
         source: 'email',
         external_id: email.threadId,
         external_metadata: {
+          message_id: email.id,
           from: email.from,
           to: email.to,
           subject: email.subject,
+          received_at: email.receivedAt,
           integration_id: integrationId,
         },
       });
