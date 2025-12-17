@@ -321,6 +321,29 @@ export function TicketDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Customer Information */}
+          {(currentTicket.customer_name || currentTicket.customer_email) && (
+            <Card className="glass border-blue-500/20 bg-blue-500/5">
+              <CardHeader>
+                <CardTitle className="text-blue-400">Informações do Cliente</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {currentTicket.customer_name && (
+                  <div>
+                    <span className="text-muted-foreground">Nome:</span>
+                    <p className="mt-1 font-medium text-foreground">{currentTicket.customer_name}</p>
+                  </div>
+                )}
+                {currentTicket.customer_email && (
+                  <div>
+                    <span className="text-muted-foreground">Email:</span>
+                    <p className="mt-1 font-medium text-foreground break-all">{currentTicket.customer_email}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="glass">
             <CardHeader>
               <CardTitle>Status</CardTitle>

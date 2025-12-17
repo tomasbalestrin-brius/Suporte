@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
 import { useTicketStore } from '@/store/ticketStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,17 +11,15 @@ import { KanbanView } from '@/components/tickets/KanbanView';
 
 export function TicketListPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const { tickets, fetchTickets } = useTicketStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
 
   useEffect(() => {
-    if (user) {
-      fetchTickets(user.id);
-    }
-  }, [user]);
+    // Busca TODOS os tickets (não filtra por usuário para admins verem todos)
+    fetchTickets();
+  }, []);
 
   const filteredTickets = tickets.filter((ticket) => {
     const matchesSearch =
@@ -179,6 +176,16 @@ export function TicketListPage() {
                       <CardDescription className="line-clamp-2">
                         {ticket.description}
                       </CardDescription>
+                      {(ticket.customer_name || ticket.customer_email) && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                          <span className="text-foreground font-medium">
+                            {ticket.customer_name || ticket.customer_email?.split('@')[0]}
+                          </span>
+                          {ticket.customer_email && (
+                            <span className="text-xs">({ticket.customer_email})</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
