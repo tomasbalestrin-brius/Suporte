@@ -19,6 +19,7 @@ export interface Ticket {
   customer_name?: string;
   customer_email?: string;
   customer_cpf?: string;
+  customer_phone?: string;
   product?: string;
   created_at: string;
   updated_at: string;

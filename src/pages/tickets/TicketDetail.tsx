@@ -322,7 +322,7 @@ export function TicketDetailPage() {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Customer Information */}
-          {(currentTicket.customer_name || currentTicket.customer_email) && (
+          {(currentTicket.customer_name || currentTicket.customer_email || currentTicket.customer_cpf || currentTicket.customer_phone) && (
             <Card className="glass border-blue-500/20 bg-blue-500/5">
               <CardHeader>
                 <CardTitle className="text-blue-400">Informações do Cliente</CardTitle>
@@ -330,7 +330,7 @@ export function TicketDetailPage() {
               <CardContent className="space-y-3 text-sm">
                 {currentTicket.customer_name && (
                   <div>
-                    <span className="text-muted-foreground">Nome:</span>
+                    <span className="text-muted-foreground">Nome Completo:</span>
                     <p className="mt-1 font-medium text-foreground">{currentTicket.customer_name}</p>
                   </div>
                 )}
@@ -338,6 +338,24 @@ export function TicketDetailPage() {
                   <div>
                     <span className="text-muted-foreground">Email:</span>
                     <p className="mt-1 font-medium text-foreground break-all">{currentTicket.customer_email}</p>
+                  </div>
+                )}
+                {currentTicket.customer_cpf && (
+                  <div>
+                    <span className="text-muted-foreground">CPF:</span>
+                    <p className="mt-1 font-medium text-foreground font-mono">{currentTicket.customer_cpf}</p>
+                  </div>
+                )}
+                {currentTicket.customer_phone && (
+                  <div>
+                    <span className="text-muted-foreground">Telefone:</span>
+                    <p className="mt-1 font-medium text-foreground">{currentTicket.customer_phone}</p>
+                  </div>
+                )}
+                {currentTicket.product && (
+                  <div>
+                    <span className="text-muted-foreground">Produto:</span>
+                    <p className="mt-1 font-medium text-foreground">{currentTicket.product}</p>
                   </div>
                 )}
               </CardContent>
