@@ -110,7 +110,7 @@ export function TicketDetailPage() {
       // If ticket is open, change to in_progress
       if (currentTicket?.status === 'open') {
         await updateTicket(id, { status: 'in_progress' });
-        await loadTicket();
+        // O store já atualiza o currentTicket automaticamente
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -125,7 +125,7 @@ export function TicketDetailPage() {
     setUpdating(true);
     try {
       await updateTicket(id, { status: status as 'open' | 'in_progress' | 'resolved' | 'closed' });
-      await loadTicket();
+      // O store já atualiza o currentTicket automaticamente, não precisa recarregar
     } catch (error) {
       console.error('Error updating status:', error);
     } finally {
@@ -171,7 +171,7 @@ export function TicketDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       {/* Header */}
       <div className="flex items-start gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/tickets')}>
@@ -195,7 +195,7 @@ export function TicketDetailPage() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-6 items-start">
         {/* Chat Area */}
         <div className="lg:col-span-2 space-y-4">
           <Card className="glass">
@@ -222,7 +222,7 @@ export function TicketDetailPage() {
             </CardHeader>
             <CardContent>
               {/* Messages */}
-              <div className="space-y-4 mb-4 max-h-[500px] overflow-y-auto pr-4">
+              <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto pr-4">
                 {messages.length === 0 ? (
                   <div className="text-center py-8">
                     <Bot className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
