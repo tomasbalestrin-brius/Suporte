@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 import { formatDate, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
 import type { Message } from '@/types';
 
@@ -22,6 +22,7 @@ export function TicketDetailPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'positive' | 'negative'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -166,6 +167,19 @@ export function TicketDetailPage() {
     }
   };
 
+  const handleRefresh = async () => {
+    if (!id) return;
+    setRefreshing(true);
+    try {
+      await loadTicket();
+      await loadMessages();
+    } catch (error) {
+      console.error('Error refreshing:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   if (!currentTicket) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -190,6 +204,15 @@ export function TicketDetailPage() {
             <Badge variant="outline" className={getPriorityColor(currentTicket.priority)}>
               {getPriorityLabel(currentTicket.priority)}
             </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="ml-auto"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
           <p className="text-muted-foreground">{currentTicket.description}</p>
           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">

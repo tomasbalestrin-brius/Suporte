@@ -1,10 +1,11 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketStore } from '@/store/ticketStore';
+import { ticketService } from '@/services/ticket.service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Ticket, Clock, CheckCircle2, Plus, MessageSquare, TrendingUp, BarChart3 } from 'lucide-react';
+import { Ticket, Clock, CheckCircle2, Plus, MessageSquare, TrendingUp, BarChart3, RefreshCw, Loader2 } from 'lucide-react';
 import { formatDate, getStatusColor, getPriorityColor, getStatusLabel } from '@/lib/utils';
 import {
   LineChart,
@@ -30,12 +31,36 @@ const COLORS = {
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { tickets, stats, fetchTickets, fetchStats } = useTicketStore();
+  const { tickets, stats, fetchTickets, fetchStats, loading } = useTicketStore();
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchTickets();
-    fetchStats();
+    loadData();
   }, []);
+
+  useEffect(() => {
+    // Subscribe to real-time ticket changes
+    const channel = ticketService.subscribeToTickets((payload) => {
+      console.log('Dashboard: Ticket change detected:', payload.eventType);
+      // Reload data when any ticket changes
+      loadData();
+    });
+
+    return () => {
+      channel?.unsubscribe();
+    };
+  }, []);
+
+  const loadData = async () => {
+    await fetchTickets();
+    await fetchStats();
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
 
   const recentTickets = tickets.slice(0, 5);
 
@@ -122,12 +147,24 @@ export function DashboardPage() {
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
             Sistema de Suporte Automatizado
+            {loading && <Loader2 className="inline-block ml-2 h-4 w-4 animate-spin" />}
           </p>
         </div>
-        <Button onClick={() => navigate('/tickets/new')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Ticket
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          <Button onClick={() => navigate('/tickets/new')}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Ticket
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
