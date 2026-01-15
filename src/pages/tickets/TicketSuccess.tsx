@@ -21,20 +21,28 @@ export function TicketSuccessPage() {
 
   useEffect(() => {
     loadTicket();
+  }, [ticketId]);
 
+  useEffect(() => {
     // Subscribe to ticket updates for real-time status changes
-    if (!ticketId) return;
+    if (!ticketId || !ticket) return;
 
     const channel = ticketService.subscribeToTicket(ticketId, (payload) => {
-      if (payload.new) {
-        setTicket(payload.new as Ticket);
+      if (payload.new && payload.new.id === ticketId) {
+        // Update only if status changed to avoid unnecessary renders
+        setTicket(prev => {
+          if (!prev || prev.status !== payload.new.status) {
+            return payload.new as Ticket;
+          }
+          return prev;
+        });
       }
     });
 
     return () => {
       channel?.unsubscribe();
     };
-  }, [ticketId]);
+  }, [ticketId, ticket?.status]);
 
   const loadTicket = async () => {
     if (!ticketId) return;

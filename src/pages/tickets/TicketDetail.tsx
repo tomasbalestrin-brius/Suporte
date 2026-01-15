@@ -17,12 +17,11 @@ export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { currentTicket, fetchTicketById, updateTicket } = useTicketStore();
+  const { currentTicket, fetchTicketById, updateTicket, updating: storeUpdating } = useTicketStore();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const [updating, setUpdating] = useState(false);
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'positive' | 'negative'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +42,14 @@ export function TicketDetailPage() {
     // Subscribe to new messages
     const channel = messageService.subscribeToMessages(id, (payload) => {
       if (payload.new) {
-        loadMessages();
+        // Add message directly to avoid race conditions with loadMessages()
+        setMessages(prev => {
+          // Check if message already exists to avoid duplicates
+          if (prev.some(m => m.id === payload.new.id)) {
+            return prev;
+          }
+          return [...prev, payload.new];
+        });
       }
     });
 
@@ -121,15 +127,13 @@ export function TicketDetailPage() {
   };
 
   const handleUpdateStatus = async (status: string) => {
-    if (!id) return;
-    setUpdating(true);
+    if (!id || storeUpdating) return;
     try {
       await updateTicket(id, { status: status as 'open' | 'in_progress' | 'resolved' | 'closed' });
       // O store já atualiza o currentTicket automaticamente, não precisa recarregar
     } catch (error) {
       console.error('Error updating status:', error);
-    } finally {
-      setUpdating(false);
+      alert('Erro ao atualizar status. Tente novamente.');
     }
   };
 
@@ -212,10 +216,10 @@ export function TicketDetailPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleUpdateStatus('resolved')}
-                    disabled={updating}
+                    disabled={storeUpdating}
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Marcar como Resolvido
+                    {storeUpdating ? 'Atualizando...' : 'Marcar como Resolvido'}
                   </Button>
                 )}
               </div>
@@ -372,7 +376,7 @@ export function TicketDetailPage() {
                 <Select
                   value={currentTicket.status}
                   onValueChange={handleUpdateStatus}
-                  disabled={updating}
+                  disabled={storeUpdating}
                 >
                   <SelectTrigger>
                     <SelectValue />

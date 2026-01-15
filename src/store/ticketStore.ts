@@ -7,6 +7,7 @@ interface TicketState {
   currentTicket: Ticket | null;
   stats: TicketStats | null;
   loading: boolean;
+  updating: boolean;
   fetchTickets: (userId?: string) => Promise<void>;
   fetchTicketById: (ticketId: string) => Promise<void>;
   createTicket: (ticket: any) => Promise<Ticket>;
@@ -16,11 +17,12 @@ interface TicketState {
   setCurrentTicket: (ticket: Ticket | null) => void;
 }
 
-export const useTicketStore = create<TicketState>((set) => ({
+export const useTicketStore = create<TicketState>((set, get) => ({
   tickets: [],
   currentTicket: null,
   stats: null,
   loading: false,
+  updating: false,
 
   fetchTickets: async (userId?) => {
     set({ loading: true });
@@ -61,7 +63,14 @@ export const useTicketStore = create<TicketState>((set) => ({
   },
 
   updateTicket: async (ticketId, updates) => {
-    set({ loading: true });
+    // Prevent simultaneous updates to the same ticket
+    const state = get();
+    if (state.updating) {
+      console.warn('Update already in progress, skipping...');
+      return;
+    }
+
+    set({ updating: true });
     try {
       const updatedTicket = await ticketService.updateTicket(ticketId, updates);
       set((state) => ({
@@ -72,10 +81,10 @@ export const useTicketStore = create<TicketState>((set) => ({
           state.currentTicket?.id === ticketId
             ? updatedTicket
             : state.currentTicket,
-        loading: false,
+        updating: false,
       }));
     } catch (error) {
-      set({ loading: false });
+      set({ updating: false });
       throw error;
     }
   },
