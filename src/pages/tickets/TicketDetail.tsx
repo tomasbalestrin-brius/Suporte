@@ -24,18 +24,23 @@ export function TicketDetailPage() {
   const [sending, setSending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'positive' | 'negative'>>({});
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id) {
+      setIsInitialLoad(true);
       loadTicket();
       loadMessages();
     }
   }, [id]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // Only auto-scroll if it's not the initial load
+    if (!isInitialLoad && messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages, isInitialLoad]);
 
   useEffect(() => {
     if (!id) return;
@@ -88,8 +93,12 @@ export function TicketDetailPage() {
         }
       }
       setMessageFeedback(feedbackMap);
+
+      // Mark initial load as complete
+      setIsInitialLoad(false);
     } catch (error) {
       console.error('Error loading messages:', error);
+      setIsInitialLoad(false);
     }
   };
 
@@ -113,6 +122,9 @@ export function TicketDetailPage() {
         content: userMessageContent,
         is_ai: false,
       });
+
+      // Scroll to bottom after sending message
+      setTimeout(() => scrollToBottom(), 100);
 
       // If ticket is open, change to in_progress
       if (currentTicket?.status === 'open') {
