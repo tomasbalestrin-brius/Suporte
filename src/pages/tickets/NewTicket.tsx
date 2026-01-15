@@ -69,6 +69,9 @@ export function NewTicketPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Prevent double submission
+    if (loading) return;
+
     setLoading(true);
     try {
       const newTicket = await createTicket({
@@ -82,13 +85,21 @@ export function NewTicketPage() {
         product,
       } as any);
 
-      navigate(`/tickets/${newTicket.id}/success`);
+      // Ensure ticket was created before navigating
+      if (newTicket && newTicket.id) {
+        // Add small delay to ensure database transaction is complete
+        setTimeout(() => {
+          navigate(`/tickets/${newTicket.id}/success`);
+        }, 100);
+      } else {
+        throw new Error('Ticket criado mas ID não retornado');
+      }
     } catch (error: any) {
       console.error('Error creating ticket:', error);
-      alert('Erro ao criar ticket. Tente novamente.');
-    } finally {
+      alert(`Erro ao criar ticket: ${error.message || 'Tente novamente.'}`);
       setLoading(false);
     }
+    // Note: Don't set loading to false on success, let navigation happen
   };
 
   return (

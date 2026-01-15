@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 import { formatDate, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
 import type { Message } from '@/types';
 
@@ -17,12 +17,12 @@ export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { currentTicket, fetchTicketById, updateTicket } = useTicketStore();
+  const { currentTicket, fetchTicketById, updateTicket, updating: storeUpdating } = useTicketStore();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const [updating, setUpdating] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'positive' | 'negative'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +43,14 @@ export function TicketDetailPage() {
     // Subscribe to new messages
     const channel = messageService.subscribeToMessages(id, (payload) => {
       if (payload.new) {
-        loadMessages();
+        // Add message directly to avoid race conditions with loadMessages()
+        setMessages(prev => {
+          // Check if message already exists to avoid duplicates
+          if (prev.some(m => m.id === payload.new.id)) {
+            return prev;
+          }
+          return [...prev, payload.new];
+        });
       }
     });
 
@@ -121,15 +128,13 @@ export function TicketDetailPage() {
   };
 
   const handleUpdateStatus = async (status: string) => {
-    if (!id) return;
-    setUpdating(true);
+    if (!id || storeUpdating) return;
     try {
       await updateTicket(id, { status: status as 'open' | 'in_progress' | 'resolved' | 'closed' });
       // O store já atualiza o currentTicket automaticamente, não precisa recarregar
     } catch (error) {
       console.error('Error updating status:', error);
-    } finally {
-      setUpdating(false);
+      alert('Erro ao atualizar status. Tente novamente.');
     }
   };
 
@@ -162,6 +167,19 @@ export function TicketDetailPage() {
     }
   };
 
+  const handleRefresh = async () => {
+    if (!id) return;
+    setRefreshing(true);
+    try {
+      await loadTicket();
+      await loadMessages();
+    } catch (error) {
+      console.error('Error refreshing:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   if (!currentTicket) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -186,6 +204,15 @@ export function TicketDetailPage() {
             <Badge variant="outline" className={getPriorityColor(currentTicket.priority)}>
               {getPriorityLabel(currentTicket.priority)}
             </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="ml-auto"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
           <p className="text-muted-foreground">{currentTicket.description}</p>
           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
@@ -212,10 +239,10 @@ export function TicketDetailPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleUpdateStatus('resolved')}
-                    disabled={updating}
+                    disabled={storeUpdating}
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Marcar como Resolvido
+                    {storeUpdating ? 'Atualizando...' : 'Marcar como Resolvido'}
                   </Button>
                 )}
               </div>
@@ -372,7 +399,7 @@ export function TicketDetailPage() {
                 <Select
                   value={currentTicket.status}
                   onValueChange={handleUpdateStatus}
-                  disabled={updating}
+                  disabled={storeUpdating}
                 >
                   <SelectTrigger>
                     <SelectValue />

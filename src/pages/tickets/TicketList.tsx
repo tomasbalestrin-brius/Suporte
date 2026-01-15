@@ -1,25 +1,51 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketStore } from '@/store/ticketStore';
+import { ticketService } from '@/services/ticket.service';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Ticket, LayoutList, LayoutGrid } from 'lucide-react';
+import { Plus, Search, Ticket, LayoutList, LayoutGrid, Loader2, RefreshCw } from 'lucide-react';
 import { formatDate, getRelativeTime, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
 import { KanbanView } from '@/components/tickets/KanbanView';
 
 export function TicketListPage() {
   const navigate = useNavigate();
-  const { tickets, fetchTickets } = useTicketStore();
+  const { tickets, fetchTickets, loading, fetchStats } = useTicketStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     // Busca TODOS os tickets (não filtra por usuário para admins verem todos)
-    fetchTickets();
+    loadData();
   }, []);
+
+  useEffect(() => {
+    // Subscribe to real-time ticket changes
+    const channel = ticketService.subscribeToTickets((payload) => {
+      console.log('Ticket change detected:', payload.eventType);
+      // Reload tickets and stats when any ticket changes
+      loadData();
+    });
+
+    return () => {
+      channel?.unsubscribe();
+    };
+  }, []);
+
+  const loadData = async () => {
+    await fetchTickets();
+    await fetchStats();
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
 
   const filteredTickets = tickets.filter((ticket) => {
     const matchesSearch =
@@ -40,9 +66,20 @@ export function TicketListPage() {
           <h1 className="text-3xl font-bold">Meus Tickets</h1>
           <p className="text-muted-foreground">
             Gerencie e acompanhe seus tickets de suporte
+            {loading && <Loader2 className="inline-block ml-2 h-4 w-4 animate-spin" />}
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Refresh Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
           {/* View Toggle */}
           <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
             <Button
