@@ -22,10 +22,16 @@ const FRUSTRATION_KEYWORDS = [
 
 export function AIChat() {
   const navigate = useNavigate();
+
+  // Check if AI is configured
+  const isAIConfigured = Boolean(import.meta.env.VITE_OPENAI_API_KEY);
+
   const [messages, setMessages] = useState<AIChatMessage[]>([
     {
       role: 'model',
-      content: 'Olá! 👋 Sou a Sofia, atendente virtual da Bethel. Como posso ajudar você hoje?',
+      content: isAIConfigured
+        ? 'Olá! 👋 Sou a Sofia, atendente virtual da Bethel. Como posso ajudar você hoje?'
+        : 'Olá! 👋 Sou a Sofia da Bethel. No momento estou em manutenção, mas você pode abrir um ticket de suporte para receber atendimento prioritário da nossa equipe. Respondemos em até 24 horas! 😊',
     },
   ]);
   const [input, setInput] = useState('');
@@ -124,6 +130,31 @@ export function AIChat() {
           </div>
         </div>
       </div>
+
+      {/* AI Not Configured Warning */}
+      {!isAIConfigured && (
+        <div className="mx-4 mt-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h4 className="text-white font-semibold mb-2">
+                Atendimento Humano Disponível
+              </h4>
+              <p className="text-gray-300 text-sm mb-4">
+                O atendimento por IA está temporariamente indisponível. Para receber suporte imediato,
+                clique no botão abaixo para abrir um ticket. Nossa equipe responde em até 24 horas!
+              </p>
+              <button
+                onClick={() => navigate('/tickets/new')}
+                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2"
+              >
+                <Ticket className="w-4 h-4" />
+                Abrir Ticket de Suporte
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
