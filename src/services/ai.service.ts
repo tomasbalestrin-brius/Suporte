@@ -200,7 +200,7 @@ export const aiService = {
   async generateResponse(messages: AIChatMessage[]): Promise<string> {
     try {
       if (!OPENAI_API_KEY || !openai) {
-        return 'Desculpe, o serviço de IA não está configurado no momento. Por favor, aguarde o atendimento humano.';
+        return 'Olá! No momento estou em manutenção. Para receber atendimento imediato, recomendo que você abra um ticket de suporte. Nossa equipe responderá em até 24 horas. 😊';
       }
 
       // Converte mensagens para formato OpenAI
@@ -219,10 +219,22 @@ export const aiService = {
         temperature: 0.7,
       });
 
-      return completion.choices[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta.';
-    } catch (error) {
+      return completion.choices[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta. Por favor, tente abrir um ticket de suporte para receber atendimento.';
+    } catch (error: any) {
       console.error('OpenAI Service Error:', error);
-      return 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou aguarde um atendente humano.';
+
+      // Verifica se é erro de quota/billing
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('insufficient_quota')) {
+        return 'No momento estou com limite de atendimentos atingido. Por favor, abra um ticket de suporte para receber atendimento prioritário da nossa equipe. Respondemos em até 24 horas. 😊';
+      }
+
+      // Verifica se é erro de API key inválida
+      if (error?.status === 401 || error?.message?.includes('Incorrect API key')) {
+        return 'Olá! No momento estou em manutenção. Para receber atendimento, por favor abra um ticket de suporte. Nossa equipe está pronta para te ajudar! 😊';
+      }
+
+      // Erro genérico
+      return 'Desculpe, tive um problema técnico para processar sua mensagem. Para não perder tempo, recomendo que você abra um ticket de suporte. Nossa equipe responderá rapidamente! 😊';
     }
   },
 
