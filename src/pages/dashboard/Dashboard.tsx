@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketStore } from '@/store/ticketStore';
-import { ticketService } from '@/services/ticket.service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,20 +35,8 @@ export function DashboardPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
-
-  useEffect(() => {
-    // Subscribe to real-time ticket changes
-    const channel = ticketService.subscribeToTickets((payload) => {
-      console.log('Dashboard: Ticket change detected:', payload.eventType);
-      // Reload data when any ticket changes
-      loadData();
-    });
-
-    return () => {
-      channel?.unsubscribe();
-    };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   const loadData = async () => {
     await fetchTickets();
