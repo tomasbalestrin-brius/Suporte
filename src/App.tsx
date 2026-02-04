@@ -36,7 +36,8 @@ function App() {
 
   useEffect(() => {
     initialize();
-  }, [initialize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   return (
     <BrowserRouter>

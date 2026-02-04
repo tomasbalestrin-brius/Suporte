@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketStore } from '@/store/ticketStore';
-import { ticketService } from '@/services/ticket.service';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,20 +20,8 @@ export function TicketListPage() {
   useEffect(() => {
     // Busca TODOS os tickets (não filtra por usuário para admins verem todos)
     loadData();
-  }, []);
-
-  useEffect(() => {
-    // Subscribe to real-time ticket changes
-    const channel = ticketService.subscribeToTickets((payload) => {
-      console.log('Ticket change detected:', payload.eventType);
-      // Reload tickets and stats when any ticket changes
-      loadData();
-    });
-
-    return () => {
-      channel?.unsubscribe();
-    };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   const loadData = async () => {
     await fetchTickets();
