@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { emailIntegrationService, type EmailIntegration } from '@/services/emailIntegration.service';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ import {
 import { formatDate } from '@/lib/utils';
 
 export function EmailIntegrationPage() {
+  const { toast } = useToast();
   const [integrations, setIntegrations] = useState<EmailIntegration[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -99,11 +101,19 @@ export function EmailIntegrationPage() {
     try {
       setSyncing(id);
       const result = await emailIntegrationService.syncEmailsToTickets(id);
-      alert(`Sincronização concluída!\n\n${result.processed} emails processados\n${result.created} tickets criados\n${result.errors} erros`);
+      toast({
+        variant: "success",
+        title: "Sincronização concluída!",
+        description: `${result.processed} emails processados, ${result.created} tickets criados, ${result.errors} erros`,
+      });
       await loadIntegrations();
     } catch (error) {
       console.error('Error syncing:', error);
-      alert('Erro ao sincronizar emails. Verifique o console para detalhes.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao sincronizar emails",
+        description: "Verifique o console para mais detalhes.",
+      });
     } finally {
       setSyncing(null);
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { webhookService, type WebhookConfig } from '@/services/webhook.service';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/useToast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +27,7 @@ const AVAILABLE_EVENTS = [
 ];
 
 export function WebhooksPage() {
+  const { toast } = useToast();
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

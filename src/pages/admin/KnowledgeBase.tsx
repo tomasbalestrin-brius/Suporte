@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { knowledgeService } from '@/services/knowledge.service';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/useToast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +21,7 @@ import {
 import type { KnowledgeBase } from '@/types';
 
 export function KnowledgeBasePage() {
+  const { toast } = useToast();
   const [knowledge, setKnowledge] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
