@@ -85,11 +85,19 @@ export function InstagramIntegrationPage() {
   const handleSubscribeWebhook = async (id: string) => {
     try {
       await instagramIntegrationService.subscribeToWebhooks(id);
-      alert('Webhook configurado com sucesso!');
+      toast({
+        variant: "success",
+        title: "Webhook configurado!",
+        description: "Webhook configurado com sucesso.",
+      });
       await loadIntegrations();
     } catch (error) {
       console.error('Error subscribing webhook:', error);
-      alert('Erro ao configurar webhook. Veja o console para mais detalhes.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao configurar webhook",
+        description: "Veja o console para mais detalhes.",
+      });
     }
   };
 

@@ -77,7 +77,11 @@ export function KnowledgeBasePage() {
 
   const handleSave = async () => {
     if (!title || !category || !content) {
-      alert('Preencha todos os campos obrigatórios!');
+      toast({
+        variant: "destructive",
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios!",
+      });
       return;
     }
 
@@ -107,7 +111,11 @@ export function KnowledgeBasePage() {
       resetForm();
     } catch (error) {
       console.error('Error saving knowledge:', error);
-      alert('Erro ao salvar. Tente novamente.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar. Tente novamente.",
+      });
     } finally {
       setSaving(false);
     }
@@ -121,7 +129,11 @@ export function KnowledgeBasePage() {
       await loadKnowledge();
     } catch (error) {
       console.error('Error deleting knowledge:', error);
-      alert('Erro ao excluir. Tente novamente.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir. Tente novamente.",
+      });
     }
   };
 

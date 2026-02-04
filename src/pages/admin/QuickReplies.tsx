@@ -74,13 +74,21 @@ export function QuickRepliesPage() {
 
   const handleSave = async () => {
     if (!title || !shortcut || !content || !category) {
-      alert('Preencha todos os campos obrigatórios!');
+      toast({
+        variant: "destructive",
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios!",
+      });
       return;
     }
 
     // Validate shortcut format
     if (!shortcut.startsWith('/')) {
-      alert('O atalho deve começar com "/" (ex: /senha)');
+      toast({
+        variant: "destructive",
+        title: "Formato inválido",
+        description: "O atalho deve começar com / (ex: /senha)",
+      });
       return;
     }
 
@@ -104,7 +112,11 @@ export function QuickRepliesPage() {
       resetForm();
     } catch (error) {
       console.error('Error saving quick reply:', error);
-      alert('Erro ao salvar. Verifique se o atalho já não existe.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: "Verifique se o atalho já não existe.",
+      });
     } finally {
       setSaving(false);
     }
@@ -118,7 +130,11 @@ export function QuickRepliesPage() {
       await loadReplies();
     } catch (error) {
       console.error('Error deleting quick reply:', error);
-      alert('Erro ao excluir. Tente novamente.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir. Tente novamente.",
+      });
     }
   };
 
