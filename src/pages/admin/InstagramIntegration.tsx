@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { instagramIntegrationService, type InstagramIntegration } from '@/services/instagramIntegration.service';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/useToast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,6 +19,7 @@ import {
 import { formatDate } from '@/lib/utils';
 
 export function InstagramIntegrationPage() {
+  const { toast } = useToast();
   const [integrations, setIntegrations] = useState<InstagramIntegration[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({

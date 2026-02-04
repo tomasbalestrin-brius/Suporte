@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { userService, type AdminUser } from '@/services/user.service';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 
 export function UsersPage() {
+  const { toast } = useToast();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,14 +91,22 @@ export function UsersPage() {
 
   const handleSave = async () => {
     if (!email) {
-      alert('Email é obrigatório!');
+      toast({
+        variant: "destructive",
+        title: "Campo obrigatório",
+        description: "Email é obrigatório!",
+      });
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      alert('Email inválido!');
+      toast({
+        variant: "destructive",
+        title: "Email inválido",
+        description: "Por favor, insira um email válido.",
+      });
       return;
     }
 
@@ -122,7 +132,11 @@ export function UsersPage() {
       resetForm();
     } catch (error) {
       console.error('Error saving user:', error);
-      alert('Erro ao salvar usuário. Verifique se o email já não existe.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar usuário",
+        description: "Verifique se o email já não existe ou tente novamente.",
+      });
     } finally {
       setSaving(false);
     }
@@ -137,7 +151,11 @@ export function UsersPage() {
       await loadStats();
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert('Erro ao excluir. Tente novamente.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir usuário",
+        description: "Não foi possível excluir o usuário. Tente novamente.",
+      });
     }
   };
 

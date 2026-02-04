@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { quickReplyService, type QuickReply } from '@/services/quickReply.service';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/useToast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export function QuickRepliesPage() {
+  const { toast } = useToast();
   const [replies, setReplies] = useState<QuickReply[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
