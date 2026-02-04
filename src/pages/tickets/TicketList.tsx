@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketStore } from '@/store/ticketStore';
+import { ticketService } from '@/services/ticket.service';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,15 +12,40 @@ import { KanbanView } from '@/components/tickets/KanbanView';
 
 export function TicketListPage() {
   const navigate = useNavigate();
-  const { tickets, fetchTickets, loading, fetchStats } = useTicketStore();
+  const { tickets, fetchTickets, loading, fetchStats, handleRealtimeUpdate } = useTicketStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [refreshing, setRefreshing] = useState(false);
+  const statsUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Busca TODOS os tickets (não filtra por usuário para admins verem todos)
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
+
+  // Subscription otimizada em tempo real
+  useEffect(() => {
+    const channel = ticketService.subscribeToTickets((payload) => {
+      // Update tickets in real-time
+      handleRealtimeUpdate(payload);
+
+      // Debounce stats update para evitar múltiplas chamadas
+      if (statsUpdateTimeoutRef.current) {
+        clearTimeout(statsUpdateTimeoutRef.current);
+      }
+      statsUpdateTimeoutRef.current = setTimeout(() => {
+        fetchStats();
+      }, 1000); // Atualiza stats 1 segundo após última mudança
+    });
+
+    return () => {
+      channel?.unsubscribe();
+      if (statsUpdateTimeoutRef.current) {
+        clearTimeout(statsUpdateTimeoutRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
 

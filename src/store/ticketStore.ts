@@ -15,6 +15,7 @@ interface TicketState {
   deleteTicket: (ticketId: string) => Promise<void>;
   fetchStats: (userId?: string) => Promise<void>;
   setCurrentTicket: (ticket: Ticket | null) => void;
+  handleRealtimeUpdate: (payload: any) => void;
 }
 
 export const useTicketStore = create<TicketState>((set, get) => ({
@@ -115,4 +116,35 @@ export const useTicketStore = create<TicketState>((set, get) => ({
   },
 
   setCurrentTicket: (ticket) => set({ currentTicket: ticket }),
+
+  handleRealtimeUpdate: (payload) => {
+    const { eventType, new: newTicket, old: oldTicket } = payload;
+
+    if (eventType === 'INSERT') {
+      // Add new ticket to the list
+      set((state) => ({
+        tickets: [newTicket, ...state.tickets],
+      }));
+    } else if (eventType === 'UPDATE') {
+      // Update existing ticket in the list and currentTicket if applicable
+      set((state) => ({
+        tickets: state.tickets.map((t) =>
+          t.id === newTicket.id ? newTicket : t
+        ),
+        currentTicket:
+          state.currentTicket?.id === newTicket.id
+            ? newTicket
+            : state.currentTicket,
+      }));
+    } else if (eventType === 'DELETE') {
+      // Remove ticket from the list
+      set((state) => ({
+        tickets: state.tickets.filter((t) => t.id !== oldTicket.id),
+        currentTicket:
+          state.currentTicket?.id === oldTicket.id
+            ? null
+            : state.currentTicket,
+      }));
+    }
+  },
 }));

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketStore } from '@/store/ticketStore';
+import { ticketService } from '@/services/ticket.service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,11 +31,36 @@ const COLORS = {
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { tickets, stats, fetchTickets, fetchStats, loading } = useTicketStore();
+  const { tickets, stats, fetchTickets, fetchStats, loading, handleRealtimeUpdate } = useTicketStore();
   const [refreshing, setRefreshing] = useState(false);
+  const statsUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
+
+  // Subscription otimizada em tempo real
+  useEffect(() => {
+    const channel = ticketService.subscribeToTickets((payload) => {
+      // Update tickets in real-time
+      handleRealtimeUpdate(payload);
+
+      // Debounce stats update para evitar múltiplas chamadas
+      if (statsUpdateTimeoutRef.current) {
+        clearTimeout(statsUpdateTimeoutRef.current);
+      }
+      statsUpdateTimeoutRef.current = setTimeout(() => {
+        fetchStats();
+      }, 1000); // Atualiza stats 1 segundo após última mudança
+    });
+
+    return () => {
+      channel?.unsubscribe();
+      if (statsUpdateTimeoutRef.current) {
+        clearTimeout(statsUpdateTimeoutRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
 
