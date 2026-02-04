@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 import { formatDate, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
+import { useToast } from '@/hooks/useToast';
 import type { Message } from '@/types';
 
 export function TicketDetailPage() {
@@ -18,6 +19,7 @@ export function TicketDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { currentTicket, fetchTicketById, updateTicket, updating: storeUpdating } = useTicketStore();
+  const { toast } = useToast();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -133,7 +135,11 @@ export function TicketDetailPage() {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Erro ao enviar mensagem. Tente novamente.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar mensagem",
+        description: "Não foi possível enviar a mensagem. Tente novamente.",
+      });
     } finally {
       setSending(false);
     }
@@ -146,7 +152,11 @@ export function TicketDetailPage() {
       // O store já atualiza o currentTicket automaticamente, não precisa recarregar
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Erro ao atualizar status. Tente novamente.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar status",
+        description: "Não foi possível atualizar o status. Tente novamente.",
+      });
     }
   };
 

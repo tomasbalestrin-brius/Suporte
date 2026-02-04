@@ -9,16 +9,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Ticket as TicketIcon } from 'lucide-react';
+import { useToast } from '@/hooks/useToast';
+import { validateCPF, validateEmail, validatePhone } from '@/lib/validators';
 import type { Category } from '@/types';
 
 export function NewTicketPage() {
   const navigate = useNavigate();
   const { createTicket } = useTicketStore();
+  const { toast } = useToast();
 
   // Campos do formulário
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerCpf, setCustomerCpf] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [product, setProduct] = useState('');
   const [necessity, setNecessity] = useState(''); // Descrição do problema
   const [category, setCategory] = useState('');
@@ -66,11 +70,63 @@ export function NewTicketPage() {
     setCustomerCpf(formatted);
   };
 
+  const formatPhone = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
+
+    // Limita a 11 dígitos
+    const limitedNumbers = numbers.slice(0, 11);
+
+    // Aplica a máscara (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+    if (limitedNumbers.length <= 2) {
+      return limitedNumbers;
+    } else if (limitedNumbers.length <= 6) {
+      return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2)}`;
+    } else if (limitedNumbers.length <= 10) {
+      return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 6)}-${limitedNumbers.slice(6)}`;
+    } else {
+      return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 7)}-${limitedNumbers.slice(7)}`;
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setCustomerPhone(formatted);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Prevent double submission
     if (loading) return;
+
+    // Validações
+    if (!validateEmail(customerEmail)) {
+      toast({
+        variant: "destructive",
+        title: "Email inválido",
+        description: "Por favor, insira um email válido.",
+      });
+      return;
+    }
+
+    if (!validateCPF(customerCpf)) {
+      toast({
+        variant: "destructive",
+        title: "CPF inválido",
+        description: "Por favor, insira um CPF válido.",
+      });
+      return;
+    }
+
+    if (!validatePhone(customerPhone)) {
+      toast({
+        variant: "destructive",
+        title: "Telefone inválido",
+        description: "Por favor, insira um telefone válido com DDD.",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -82,21 +138,32 @@ export function NewTicketPage() {
         customer_name: customerName,
         customer_email: customerEmail,
         customer_cpf: customerCpf,
+        customer_phone: customerPhone,
         product,
       } as any);
 
       // Ensure ticket was created before navigating
       if (newTicket && newTicket.id) {
+        toast({
+          variant: "success",
+          title: "Ticket criado com sucesso!",
+          description: "Você será redirecionado para acompanhar o atendimento.",
+        });
+
         // Add small delay to ensure database transaction is complete
         setTimeout(() => {
           navigate(`/tickets/${newTicket.id}/success`);
-        }, 100);
+        }, 1000);
       } else {
         throw new Error('Ticket criado mas ID não retornado');
       }
     } catch (error: any) {
       console.error('Error creating ticket:', error);
-      alert(`Erro ao criar ticket: ${error.message || 'Tente novamente.'}`);
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar ticket",
+        description: error.message || 'Ocorreu um erro. Tente novamente.',
+      });
       setLoading(false);
     }
     // Note: Don't set loading to false on success, let navigation happen
@@ -141,20 +208,20 @@ export function NewTicketPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="customerEmail">Email de Compra *</Label>
-                <Input
-                  id="customerEmail"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="customerEmail">Email de Compra *</Label>
+              <Input
+                id="customerEmail"
+                type="email"
+                placeholder="seu@email.com"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="customerCpf">CPF *</Label>
                 <Input
@@ -165,6 +232,19 @@ export function NewTicketPage() {
                   required
                   disabled={loading}
                   maxLength={14}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customerPhone">Telefone *</Label>
+                <Input
+                  id="customerPhone"
+                  placeholder="(00) 00000-0000"
+                  value={customerPhone}
+                  onChange={handlePhoneChange}
+                  required
+                  disabled={loading}
+                  maxLength={15}
                 />
               </div>
             </div>
