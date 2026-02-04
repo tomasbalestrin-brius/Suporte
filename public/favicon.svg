@@ -1,0 +1,14 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="48" fill="#3b82f6"/>
+
+  <!-- Símbolo Beth hebraico estilizado -->
+  <path
+    d="M25 20 L25 80 L75 80 C 85 80 90 75 90 65 L90 50 C 90 45 87 40 75 40 L35 40 L35 30 C 35 25 40 20 50 20 L75 20"
+    stroke="white"
+    stroke-width="8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+</svg>

@@ -4,6 +4,7 @@ import { ticketService } from '@/services/ticket.service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Clock, Search, PlayCircle, CheckCircle } from 'lucide-react';
+import { BethelLogo } from '@/components/ui/BethelLogo';
 import type { Ticket } from '@/types';
 
 const STATUS_STEPS = [
@@ -75,6 +76,11 @@ export function TicketSuccessPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
       <div className="max-w-3xl mx-auto space-y-6">
+        {/* Logo Header */}
+        <div className="flex justify-center mb-8">
+          <BethelLogo variant="full" subtitle="Suporte" className="text-white" />
+        </div>
+
         {/* Success Message */}
         <Card className="glass border-green-500/20 bg-green-500/5">
           <CardHeader className="text-center">
