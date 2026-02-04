@@ -4,6 +4,7 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 import { Loader2 } from 'lucide-react';
+import { Toaster } from './components/ui/toaster';
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -71,6 +72,7 @@ function App() {
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+      <Toaster />
       </Suspense>
     </BrowserRouter>
   );
