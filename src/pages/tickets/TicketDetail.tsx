@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useTicketStore } from '@/store/ticketStore';
 import { messageService } from '@/services/message.service';
 import { aiFeedbackService } from '@/services/aiFeedback.service';
+import { emailNotificationService } from '@/services/emailNotification.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -148,7 +149,44 @@ export function TicketDetailPage() {
   const handleUpdateStatus = async (status: string) => {
     if (!id || storeUpdating) return;
     try {
+      const previousStatus = currentTicket?.status;
       await updateTicket(id, { status: status as 'open' | 'in_progress' | 'resolved' | 'closed' });
+
+      // Se mudou para "resolved" e tem email do cliente, envia notificação
+      if (status === 'resolved' && previousStatus !== 'resolved' && currentTicket?.customer_email) {
+        try {
+          // Verifica se o Resend está configurado
+          if (emailNotificationService.isConfigured()) {
+            await emailNotificationService.sendTicketResolvedEmail({
+              ticketId: id,
+              ticketTitle: currentTicket.title,
+              customerName: currentTicket.customer_name || 'Cliente',
+              customerEmail: currentTicket.customer_email,
+              resolvedAt: new Date().toISOString(),
+              resolution: messages.length > 0
+                ? messages[messages.length - 1].content
+                : undefined,
+            });
+
+            toast({
+              variant: "success",
+              title: "Email enviado!",
+              description: `Notificação de resolução enviada para ${currentTicket.customer_email}`,
+            });
+          } else {
+            console.warn('Resend não configurado. Email não enviado.');
+          }
+        } catch (emailError) {
+          console.error('Erro ao enviar email de notificação:', emailError);
+          // Não bloqueia a atualização do ticket se o email falhar
+          toast({
+            variant: "destructive",
+            title: "Aviso",
+            description: "Ticket atualizado, mas não foi possível enviar o email de notificação.",
+          });
+        }
+      }
+
       // O store já atualiza o currentTicket automaticamente, não precisa recarregar
     } catch (error) {
       console.error('Error updating status:', error);
