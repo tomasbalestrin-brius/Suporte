@@ -4,7 +4,17 @@
 const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY;
 const FROM_EMAIL = import.meta.env.VITE_FROM_EMAIL || 'onboarding@resend.dev';
 const FROM_NAME = import.meta.env.VITE_FROM_NAME || 'Suporte Bethel Educação';
-const APP_URL = import.meta.env.VITE_APP_URL || window.location.origin;
+
+// Função para obter URL da aplicação de forma segura
+const getAppUrl = (): string => {
+  if (import.meta.env.VITE_APP_URL) {
+    return import.meta.env.VITE_APP_URL;
+  }
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'http://localhost:5173';
+};
 
 export interface TicketResolvedEmailData {
   ticketId: string;
@@ -114,7 +124,7 @@ export const emailNotificationService = {
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 30px 0;">
                 <tr>
                   <td align="center">
-                    <a href="${APP_URL}/tickets/${ticketId}"
+                    <a href="${getAppUrl()}/tickets/${ticketId}"
                        style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                       Ver Detalhes do Ticket
                     </a>
