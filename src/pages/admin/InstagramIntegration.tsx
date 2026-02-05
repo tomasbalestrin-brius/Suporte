@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { instagramIntegrationService, type InstagramIntegration } from '@/services/instagramIntegration.service';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -20,6 +21,7 @@ import { formatDate } from '@/lib/utils';
 
 export function InstagramIntegrationPage() {
   const { toast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [integrations, setIntegrations] = useState<InstagramIntegration[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -71,7 +73,14 @@ export function InstagramIntegrationPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja remover esta integração?')) return;
+    const confirmed = await confirm({
+      title: 'Remover integração',
+      description: 'Tem certeza que deseja remover esta integração do Instagram?',
+      confirmText: 'Remover',
+      cancelText: 'Cancelar',
+    });
+
+    if (!confirmed) return;
 
     try {
       await instagramIntegrationService.deleteIntegration(id);
@@ -351,6 +360,7 @@ export function InstagramIntegrationPage() {
           </CardContent>
         </Card>
       )}
+      <ConfirmDialog />
     </div>
   );
 }

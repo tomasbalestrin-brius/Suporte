@@ -1,7 +1,8 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuthStore } from './store/authStore';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from './components/ui/toaster';
@@ -16,6 +17,7 @@ const LoadingFallback = () => (
 // Public Pages - Keep these eager loaded for faster initial load
 import { WelcomePage } from './pages/public/Welcome';
 import { LoginPage } from './pages/auth/Login';
+import { NotFoundPage } from './pages/NotFound';
 
 // Lazy load all other pages for better performance
 const NewTicketPage = lazy(() => import('./pages/tickets/NewTicket'));
@@ -41,9 +43,10 @@ function App() {
   }, []); // Run only once on mount
 
   return (
-    <BrowserRouter>
-      <Suspense fallback={<LoadingFallback />}>
-        <Routes>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
           {/* Public Routes */}
           <Route index element={<WelcomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -70,11 +73,12 @@ function App() {
           </Route>
 
           {/* 404 */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      <Toaster />
-      </Suspense>
-    </BrowserRouter>
+        <Toaster />
+        </Suspense>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

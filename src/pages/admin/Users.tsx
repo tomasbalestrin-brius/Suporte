@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { userService, type AdminUser } from '@/services/user.service';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +24,7 @@ import {
 
 export function UsersPage() {
   const { toast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,7 +145,14 @@ export function UsersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) return;
+    const confirmed = await confirm({
+      title: 'Excluir usuário',
+      description: 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
+    });
+
+    if (!confirmed) return;
 
     try {
       await userService.deleteUser(id);
@@ -515,6 +524,7 @@ export function UsersPage() {
           ))
         )}
       </div>
+      <ConfirmDialog />
     </div>
   );
 }

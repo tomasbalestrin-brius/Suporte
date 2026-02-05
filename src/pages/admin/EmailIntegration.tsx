@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { emailIntegrationService, type EmailIntegration } from '@/services/emailIntegration.service';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ import { formatDate } from '@/lib/utils';
 
 export function EmailIntegrationPage() {
   const { toast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [integrations, setIntegrations] = useState<EmailIntegration[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -84,7 +86,14 @@ export function EmailIntegrationPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja remover esta integração?')) return;
+    const confirmed = await confirm({
+      title: 'Remover integração',
+      description: 'Tem certeza que deseja remover esta integração de email?',
+      confirmText: 'Remover',
+      cancelText: 'Cancelar',
+    });
+
+    if (!confirmed) return;
 
     try {
       await emailIntegrationService.deleteIntegration(id);
@@ -375,6 +384,7 @@ export function EmailIntegrationPage() {
           ))
         )}
       </div>
+      <ConfirmDialog />
     </div>
   );
 }
