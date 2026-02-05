@@ -81,7 +81,11 @@ export function WebhooksPage() {
 
   const handleSave = async () => {
     if (!name || !url || selectedEvents.length === 0) {
-      alert('Preencha todos os campos obrigatórios!');
+      toast({
+        variant: "destructive",
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios!",
+      });
       return;
     }
 
@@ -89,7 +93,11 @@ export function WebhooksPage() {
     try {
       new URL(url);
     } catch {
-      alert('URL inválida!');
+      toast({
+        variant: "destructive",
+        title: "URL inválida",
+        description: "Por favor, insira uma URL válida.",
+      });
       return;
     }
 
@@ -113,7 +121,11 @@ export function WebhooksPage() {
       resetForm();
     } catch (error) {
       console.error('Error saving webhook:', error);
-      alert('Erro ao salvar. Tente novamente.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar. Tente novamente.",
+      });
     } finally {
       setSaving(false);
     }
@@ -127,7 +139,11 @@ export function WebhooksPage() {
       await loadWebhooks();
     } catch (error) {
       console.error('Error deleting webhook:', error);
-      alert('Erro ao excluir. Tente novamente.');
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir. Tente novamente.",
+      });
     }
   };
 
