@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { quickReplyService, type QuickReply } from '@/services/quickReply.service';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +23,7 @@ import {
 
 export function QuickRepliesPage() {
   const { toast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [replies, setReplies] = useState<QuickReply[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -123,7 +125,14 @@ export function QuickRepliesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta resposta rápida?')) return;
+    const confirmed = await confirm({
+      title: 'Excluir resposta rápida',
+      description: 'Tem certeza que deseja excluir esta resposta rápida?',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
+    });
+
+    if (!confirmed) return;
 
     try {
       await quickReplyService.delete(id);
@@ -409,6 +418,7 @@ export function QuickRepliesPage() {
           ))
         )}
       </div>
+      <ConfirmDialog />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { webhookService, type WebhookConfig } from '@/services/webhook.service';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +29,7 @@ const AVAILABLE_EVENTS = [
 
 export function WebhooksPage() {
   const { toast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -132,7 +134,14 @@ export function WebhooksPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este webhook?')) return;
+    const confirmed = await confirm({
+      title: 'Excluir webhook',
+      description: 'Tem certeza que deseja excluir este webhook?',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
+    });
+
+    if (!confirmed) return;
 
     try {
       await webhookService.deleteWebhook(id);
@@ -409,6 +418,7 @@ export function WebhooksPage() {
           ))
         )}
       </div>
+      <ConfirmDialog />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { knowledgeService } from '@/services/knowledge.service';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +23,7 @@ import type { KnowledgeBase } from '@/types';
 
 export function KnowledgeBasePage() {
   const { toast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [knowledge, setKnowledge] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -122,9 +124,16 @@ export function KnowledgeBasePage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este conhecimento?')) return;
+    const confirmed = await confirm({
+      title: 'Excluir conhecimento',
+      description: 'Tem certeza que deseja excluir este conhecimento?',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
+    });
 
-    try {
+    if (!confirmed) return;
+
+    try{
       await knowledgeService.delete(id);
       await loadKnowledge();
     } catch (error) {
@@ -395,6 +404,7 @@ export function KnowledgeBasePage() {
           ))
         )}
       </div>
+      <ConfirmDialog />
     </div>
   );
 }
