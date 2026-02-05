@@ -1,14 +1,10 @@
-import { Resend } from 'resend';
+// Email notification service usando Resend API diretamente via fetch
+// Não usa o SDK do Resend para evitar problemas de compatibilidade com browser
 
-// Inicializa Resend com API Key do .env
-const resend = new Resend(import.meta.env.VITE_RESEND_API_KEY);
-
-// Email remetente - usar onboarding@resend.dev para testes ou seu domínio verificado
+const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY;
 const FROM_EMAIL = import.meta.env.VITE_FROM_EMAIL || 'onboarding@resend.dev';
 const FROM_NAME = import.meta.env.VITE_FROM_NAME || 'Suporte Bethel Educação';
-
-// URL base da aplicação
-const APP_URL = import.meta.env.VITE_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173');
+const APP_URL = import.meta.env.VITE_APP_URL || window.location.origin;
 
 export interface TicketResolvedEmailData {
   ticketId: string;
@@ -178,19 +174,33 @@ Este é um email automático. Por favor, não responda diretamente.
 © ${new Date().getFullYear()} Bethel Educação. Todos os direitos reservados.
       `;
 
-      const response = await resend.emails.send({
-        from: `${FROM_NAME} <${FROM_EMAIL}>`,
-        to: customerEmail,
-        subject: `✅ Seu ticket "${ticketTitle}" foi resolvido`,
-        html: htmlContent,
-        text: textContent,
-        tags: [
-          { name: 'category', value: 'ticket-resolved' },
-          { name: 'ticket-id', value: ticketId },
-        ],
+      // Chamada direta à API REST do Resend
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `${FROM_NAME} <${FROM_EMAIL}>`,
+          to: [customerEmail],
+          subject: `✅ Seu ticket "${ticketTitle}" foi resolvido`,
+          html: htmlContent,
+          text: textContent,
+          tags: [
+            { name: 'category', value: 'ticket-resolved' },
+            { name: 'ticket-id', value: ticketId },
+          ],
+        }),
       });
 
-      console.log('✅ Email enviado com sucesso:', response);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Resend API error: ${JSON.stringify(errorData)}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Email enviado com sucesso:', result);
     } catch (error) {
       console.error('❌ Erro ao enviar email:', error);
       throw error;
@@ -201,7 +211,7 @@ Este é um email automático. Por favor, não responda diretamente.
    * Valida se o serviço está configurado corretamente
    */
   isConfigured(): boolean {
-    const apiKey = import.meta.env.VITE_RESEND_API_KEY;
+    const apiKey = RESEND_API_KEY;
     return !!apiKey && apiKey !== 'your_resend_api_key_here';
   },
 
@@ -213,7 +223,7 @@ Este é um email automático. Por favor, não responda diretamente.
       isConfigured: this.isConfigured(),
       fromEmail: FROM_EMAIL,
       fromName: FROM_NAME,
-      apiKeyPresent: !!import.meta.env.VITE_RESEND_API_KEY,
+      apiKeyPresent: !!RESEND_API_KEY,
     };
   },
 };
