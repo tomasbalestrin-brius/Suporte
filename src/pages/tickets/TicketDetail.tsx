@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 import { formatDate, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
 import { useToast } from '@/hooks/useToast';
+import { SafeContent } from '@/components/ui/safe-content';
 import type { Message } from '@/types';
 
 export function TicketDetailPage() {
@@ -377,7 +378,11 @@ export function TicketDetailPage() {
                             ? 'bg-muted'
                             : 'bg-primary text-primary-foreground'
                         }`}>
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          <SafeContent
+                            content={message.content}
+                            className="text-sm"
+                            preserveWhitespace
+                          />
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-muted-foreground">
