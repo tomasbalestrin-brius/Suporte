@@ -14,6 +14,15 @@ export interface TicketResolvedEmailData {
   resolution?: string;
 }
 
+export interface AdminReplyEmailData {
+  ticketId: string;
+  ticketTitle: string;
+  customerName: string;
+  customerEmail: string;
+  replyContent: string;
+  adminName: string;
+}
+
 export const emailNotificationService = {
   /**
    * Envia email notificando que o ticket foi resolvido
@@ -44,6 +53,39 @@ export const emailNotificationService = {
     } catch (error) {
       console.error('❌ Erro ao enviar email:', error);
       throw error;
+    }
+  },
+
+  /**
+   * Envia email notificando que o admin respondeu o ticket
+   * Usa Supabase Edge Function para evitar CORS
+   */
+  async sendAdminReplyEmail(data: AdminReplyEmailData): Promise<void> {
+    try {
+      console.log('📤 Enviando email de resposta do admin...');
+
+      const { data: result, error } = await supabase.functions.invoke('send-admin-reply-email', {
+        body: {
+          ...data,
+          appUrl: APP_URL,
+        },
+      });
+
+      if (error) {
+        console.error('❌ Erro da Edge Function:', error);
+        throw error;
+      }
+
+      if (!result.success) {
+        console.error('❌ Falha no envio:', result.error);
+        throw new Error(result.error);
+      }
+
+      console.log('✅ Email de resposta enviado! ID:', result.emailId);
+    } catch (error) {
+      console.error('❌ Erro ao enviar email de resposta:', error);
+      // Don't throw - we don't want to block the reply from being sent
+      // Just log the error
     }
   },
 

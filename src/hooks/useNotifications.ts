@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useToast } from '@/hooks/useToast';
+import { useSupabaseSubscription } from '@/hooks/useSupabaseSubscription';
 
 export interface Notification {
   id: string;
@@ -15,6 +17,7 @@ export interface Notification {
 
 export function useNotifications() {
   const { user } = useAuthStore();
+  const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -40,16 +43,70 @@ export function useNotifications() {
     }
   }, [notifications]);
 
-  // Subscribe to ticket changes
-  useEffect(() => {
-    if (!user) return;
-
-    let channel: any;
-    let messagesChannel: any;
-
+  // Callback to handle ticket changes
+  const handleTicketChange = useCallback((payload: any) => {
     try {
-      // Subscribe to all ticket updates
-      channel = supabase
+      if (payload.eventType === 'INSERT') {
+        const notification = {
+          title: 'Novo Ticket',
+          message: `Um novo ticket foi criado: ${payload.new.title}`,
+          type: 'info' as const,
+          ticket_id: payload.new.id,
+          link: `/tickets/${payload.new.id}`,
+        };
+        addNotificationWithToast(notification);
+      } else if (payload.eventType === 'UPDATE') {
+        // Only notify about status changes
+        if (payload.old.status !== payload.new.status) {
+          const notification = {
+            title: 'Status Atualizado',
+            message: `Ticket "${payload.new.title}" mudou para ${getStatusLabel(payload.new.status)}`,
+            type: 'success' as const,
+            ticket_id: payload.new.id,
+            link: `/tickets/${payload.new.id}`,
+          };
+          addNotificationWithToast(notification);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing ticket notification:', error);
+    }
+  }, []);
+
+  // Callback to handle message changes
+  const handleMessageChange = useCallback(async (payload: any) => {
+    try {
+      // Don't notify about own messages
+      if (!user || payload.new.user_id === user.id) return;
+
+      // Fetch ticket info
+      const { data: ticket } = await supabase
+        .from('tickets')
+        .select('title, protocol')
+        .eq('id', payload.new.ticket_id)
+        .single();
+
+      if (ticket) {
+        const notification = {
+          title: 'Nova Mensagem',
+          message: `Nova mensagem no ticket "${ticket.title}"`,
+          type: 'info' as const,
+          ticket_id: payload.new.ticket_id,
+          link: `/tickets/${payload.new.ticket_id}`,
+        };
+        addNotificationWithToast(notification);
+      }
+    } catch (error) {
+      console.error('Error processing message notification:', error);
+    }
+  }, [user]);
+
+  // Subscribe to ticket changes with improved error handling
+  useSupabaseSubscription(
+    () => {
+      if (!user) return null;
+
+      return supabase
         .channel('ticket-notifications')
         .on(
           'postgres_changes',
@@ -58,37 +115,34 @@ export function useNotifications() {
             schema: 'public',
             table: 'tickets',
           },
-          (payload) => {
-            try {
-              if (payload.eventType === 'INSERT') {
-                addNotification({
-                  title: 'Novo Ticket',
-                  message: `Um novo ticket foi criado: ${payload.new.title}`,
-                  type: 'info',
-                  ticket_id: payload.new.id,
-                  link: `/tickets/${payload.new.id}`,
-                });
-              } else if (payload.eventType === 'UPDATE') {
-                // Only notify about status changes
-                if (payload.old.status !== payload.new.status) {
-                  addNotification({
-                    title: 'Status Atualizado',
-                    message: `Ticket "${payload.new.title}" mudou para ${getStatusLabel(payload.new.status)}`,
-                    type: 'success',
-                    ticket_id: payload.new.id,
-                    link: `/tickets/${payload.new.id}`,
-                  });
-                }
-              }
-            } catch (error) {
-              console.error('Error processing ticket notification:', error);
-            }
-          }
-        )
-        .subscribe();
+          handleTicketChange
+        );
+    },
+    {
+      onError: (error) => {
+        console.error('Ticket subscription error:', error);
+        toast({
+          title: 'Erro de Conexão',
+          description: 'Falha ao conectar com notificações de tickets',
+          variant: 'destructive',
+        });
+      },
+      onReconnect: () => {
+        toast({
+          title: 'Reconectado',
+          description: 'Notificações de tickets reconectadas',
+        });
+      },
+    },
+    [user, handleTicketChange]
+  );
 
-      // Subscribe to new messages
-      messagesChannel = supabase
+  // Subscribe to message changes with improved error handling
+  useSupabaseSubscription(
+    () => {
+      if (!user) return null;
+
+      return supabase
         .channel('message-notifications')
         .on(
           'postgres_changes',
@@ -97,47 +151,16 @@ export function useNotifications() {
             schema: 'public',
             table: 'messages',
           },
-          async (payload) => {
-            try {
-              // Don't notify about own messages
-              if (payload.new.user_id === user.id) return;
-
-              // Fetch ticket info
-              const { data: ticket } = await supabase
-                .from('tickets')
-                .select('title, protocol')
-                .eq('id', payload.new.ticket_id)
-                .single();
-
-              if (ticket) {
-                addNotification({
-                  title: 'Nova Mensagem',
-                  message: `Nova mensagem no ticket "${ticket.title}"`,
-                  type: 'info',
-                  ticket_id: payload.new.ticket_id,
-                  link: `/tickets/${payload.new.ticket_id}`,
-                });
-              }
-            } catch (error) {
-              console.error('Error processing message notification:', error);
-            }
-          }
-        )
-        .subscribe();
-    } catch (error) {
-      console.error('Error setting up notification channels:', error);
-    }
-
-    return () => {
-      try {
-        if (channel) channel.unsubscribe();
-        if (messagesChannel) messagesChannel.unsubscribe();
-      } catch (error) {
-        console.error('Error unsubscribing channels:', error);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+          handleMessageChange
+        );
+    },
+    {
+      onError: (error) => {
+        console.error('Message subscription error:', error);
+      },
+    },
+    [user, handleMessageChange]
+  );
 
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'read' | 'created_at'>) => {
     const newNotification: Notification = {
@@ -164,7 +187,23 @@ export function useNotifications() {
         tag: newNotification.id,
       });
     }
+
+    return newNotification;
   }, []);
+
+  // Add notification and show toast
+  const addNotificationWithToast = useCallback((notification: Omit<Notification, 'id' | 'read' | 'created_at'>) => {
+    const newNotification = addNotification(notification);
+
+    // Show toast notification
+    toast({
+      title: notification.title,
+      description: notification.message,
+      variant: notification.type === 'error' ? 'destructive' : 'default',
+    });
+
+    return newNotification;
+  }, [addNotification, toast]);
 
   const markAsRead = useCallback((id: string) => {
     setNotifications(prev =>

@@ -2,28 +2,54 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketStore } from '@/store/ticketStore';
 import { ticketService } from '@/services/ticket.service';
+import { usePagination } from '@/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Pagination } from '@/components/ui/pagination';
 import { Plus, Search, Ticket, LayoutList, LayoutGrid, Loader2, RefreshCw } from 'lucide-react';
 import { formatDate, getRelativeTime, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
 import { KanbanView } from '@/components/tickets/KanbanView';
+import { TicketListSkeleton } from '@/components/tickets/TicketListSkeleton';
+import type { Ticket as TicketType } from '@/types';
 
 export function TicketListPage() {
   const navigate = useNavigate();
-  const { tickets, fetchTickets, loading, fetchStats, handleRealtimeUpdate } = useTicketStore();
+  const { fetchStats, handleRealtimeUpdate } = useTicketStore();
+  const [tickets, setTickets] = useState<TicketType[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [refreshing, setRefreshing] = useState(false);
   const statsUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [paginationState, paginationActions] = usePagination({ initialPageSize: 20 });
 
+  // Debounce search term
   useEffect(() => {
-    // Busca TODOS os tickets (não filtra por usuário para admins verem todos)
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      paginationActions.setPage(1); // Reset to first page on search
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm, paginationActions]);
+
+  // Fetch tickets when pagination or filters change
+  useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
+  }, [paginationState.page, paginationState.pageSize, debouncedSearch, filterStatus]);
 
   // Subscription otimizada em tempo real
   useEffect(() => {
@@ -50,26 +76,32 @@ export function TicketListPage() {
   }, []); // Run only once on mount
 
   const loadData = async () => {
-    await fetchTickets();
-    await fetchStats();
+    setLoading(true);
+    try {
+      const { data, total } = await ticketService.getTicketsPaginated({
+        page: paginationState.page,
+        pageSize: paginationState.pageSize,
+        status: filterStatus !== 'all' ? filterStatus : undefined,
+        search: debouncedSearch || undefined,
+      });
+      setTickets(data);
+      paginationActions.setTotalItems(total);
+      await fetchStats();
+    } catch (error) {
+      console.error('Error loading tickets:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
+    try {
+      await loadData();
+    } finally {
+      setRefreshing(false);
+    }
   };
-
-  const filteredTickets = tickets.filter((ticket) => {
-    const matchesSearch =
-      ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus =
-      filterStatus === 'all' || ticket.status === filterStatus;
-
-    return matchesSearch && matchesStatus;
-  });
 
   return (
     <div className="space-y-6">
@@ -154,7 +186,7 @@ export function TicketListPage() {
       {/* Tickets Display - List or Kanban */}
       {viewMode === 'kanban' ? (
         // Kanban View
-        filteredTickets.length === 0 ? (
+        tickets.length === 0 ? (
           <Card className="glass">
             <CardContent className="pt-6">
               <div className="text-center py-8">
@@ -175,12 +207,14 @@ export function TicketListPage() {
             </CardContent>
           </Card>
         ) : (
-          <KanbanView tickets={filteredTickets} />
+          <KanbanView tickets={tickets} />
         )
       ) : (
         // List View
         <div className="space-y-4">
-          {filteredTickets.length === 0 ? (
+          {loading ? (
+            <TicketListSkeleton count={paginationState.pageSize} />
+          ) : tickets.length === 0 ? (
             <Card className="glass">
               <CardContent className="pt-6">
                 <div className="text-center py-8">
@@ -205,51 +239,67 @@ export function TicketListPage() {
               </CardContent>
             </Card>
           ) : (
-            filteredTickets.map((ticket) => (
-              <Card
-                key={ticket.id}
-                className="glass hover:border-primary/50 cursor-pointer transition-all"
-                onClick={() => navigate(`/tickets/${ticket.id}`)}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <CardTitle className="text-lg">{ticket.title}</CardTitle>
-                        <Badge className={getStatusColor(ticket.status)}>
-                          {getStatusLabel(ticket.status)}
-                        </Badge>
-                        <Badge variant="outline" className={getPriorityColor(ticket.priority)}>
-                          {getPriorityLabel(ticket.priority)}
-                        </Badge>
-                      </div>
-                      <CardDescription className="line-clamp-2">
-                        {ticket.description}
-                      </CardDescription>
-                      {(ticket.customer_name || ticket.customer_email) && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                          <span className="text-foreground font-medium">
-                            {ticket.customer_name || ticket.customer_email?.split('@')[0]}
-                          </span>
-                          {ticket.customer_email && (
-                            <span className="text-xs">({ticket.customer_email})</span>
-                          )}
+            <>
+              {tickets.map((ticket) => (
+                <Card
+                  key={ticket.id}
+                  className="glass hover:border-primary/50 cursor-pointer transition-all"
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <CardTitle className="text-lg">{ticket.title}</CardTitle>
+                          <Badge className={getStatusColor(ticket.status)}>
+                            {getStatusLabel(ticket.status)}
+                          </Badge>
+                          <Badge variant="outline" className={getPriorityColor(ticket.priority)}>
+                            {getPriorityLabel(ticket.priority)}
+                          </Badge>
                         </div>
-                      )}
+                        <CardDescription className="line-clamp-2">
+                          {ticket.description}
+                        </CardDescription>
+                        {(ticket.customer_name || ticket.customer_email) && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                            <span className="text-foreground font-medium">
+                              {ticket.customer_name || ticket.customer_email?.split('@')[0]}
+                            </span>
+                            {ticket.customer_email && (
+                              <span className="text-xs">({ticket.customer_email})</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-4">
-                      <span>Categoria: <span className="text-foreground">{ticket.category}</span></span>
-                      <span>Criado {getRelativeTime(ticket.created_at)}</span>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4">
+                        <span>Categoria: <span className="text-foreground">{ticket.category}</span></span>
+                        <span>Criado {getRelativeTime(ticket.created_at)}</span>
+                      </div>
+                      <span className="text-xs">{formatDate(ticket.created_at)}</span>
                     </div>
-                    <span className="text-xs">{formatDate(ticket.created_at)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* Pagination Controls */}
+              {paginationState.totalPages > 1 && (
+                <Card className="glass">
+                  <Pagination
+                    currentPage={paginationState.page}
+                    totalPages={paginationState.totalPages}
+                    pageSize={paginationState.pageSize}
+                    totalItems={paginationState.totalItems}
+                    onPageChange={paginationActions.setPage}
+                    onPageSizeChange={paginationActions.setPageSize}
+                  />
+                </Card>
+              )}
+            </>
           )}
         </div>
       )}
