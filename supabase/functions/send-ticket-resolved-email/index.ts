@@ -2,6 +2,12 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 interface SendEmailRequest {
   ticketId: string
   ticketTitle: string
@@ -13,13 +19,12 @@ interface SendEmailRequest {
 }
 
 serve(async (req) => {
-  // CORS headers
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST',
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    }})
+    return new Response('ok', {
+      status: 200,
+      headers: corsHeaders,
+    })
   }
 
   try {
@@ -190,7 +195,7 @@ Este é um email automático. Por favor, não responda diretamente.
       {
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          ...corsHeaders,
         },
       }
     )
@@ -202,7 +207,7 @@ Este é um email automático. Por favor, não responda diretamente.
         status: 500,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          ...corsHeaders,
         },
       }
     )
