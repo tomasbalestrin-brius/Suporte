@@ -40,8 +40,45 @@ export function validateCPF(cpf: string): boolean {
  * @returns true se o email é válido
  */
 export function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  if (!email || typeof email !== 'string') return false;
+
+  // Remove espaços em branco
+  const trimmed = email.trim();
+
+  // Verifica tamanho mínimo e máximo
+  if (trimmed.length < 5 || trimmed.length > 254) return false;
+
+  // Regex mais robusta para validação de email
+  // Baseada na RFC 5322 (simplificada)
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+  if (!emailRegex.test(trimmed)) return false;
+
+  // Verifica se tem @ único
+  const atCount = (trimmed.match(/@/g) || []).length;
+  if (atCount !== 1) return false;
+
+  // Divide em local e domínio
+  const [local, domain] = trimmed.split('@');
+
+  // Validações do local (antes do @)
+  if (!local || local.length > 64) return false;
+  if (local.startsWith('.') || local.endsWith('.')) return false;
+  if (local.includes('..')) return false;
+
+  // Validações do domínio (depois do @)
+  if (!domain || domain.length > 253) return false;
+  if (domain.startsWith('.') || domain.endsWith('.')) return false;
+  if (domain.includes('..')) return false;
+
+  // Verifica se tem pelo menos um ponto no domínio
+  if (!domain.includes('.')) return false;
+
+  // Verifica extensão do domínio (TLD)
+  const tld = domain.split('.').pop();
+  if (!tld || tld.length < 2) return false;
+
+  return true;
 }
 
 /**

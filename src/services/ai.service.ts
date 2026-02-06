@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { knowledgeService } from './knowledge.service';
+import { AI_CONFIG } from '@/constants/ai';
 import type { AIChatMessage } from '@/types';
 
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
@@ -213,10 +214,12 @@ export const aiService = {
       ];
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: AI_CONFIG.MODEL,
         messages: openaiMessages,
-        max_tokens: 500,
-        temperature: 0.7,
+        max_tokens: AI_CONFIG.MAX_TOKENS,
+        temperature: AI_CONFIG.TEMPERATURE,
+      }, {
+        timeout: AI_CONFIG.TIMEOUT,
       });
 
       return completion.choices[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta. Por favor, tente abrir um ticket de suporte para receber atendimento.';
@@ -278,13 +281,15 @@ Gere uma resposta inicial útil, empática e profissional:
 Limite: 200 palavras.`;
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: AI_CONFIG.MODEL,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 500,
-        temperature: 0.7,
+        max_tokens: AI_CONFIG.MAX_TOKENS,
+        temperature: AI_CONFIG.TEMPERATURE,
+      }, {
+        timeout: AI_CONFIG.TIMEOUT,
       });
 
       return completion.choices[0]?.message?.content || `Olá ${customerName}! Recebemos seu ticket e nossa equipe irá analisá-lo em breve.`;
@@ -323,13 +328,15 @@ Descrição: ${description}
 IMPORTANTE: Retorne APENAS o JSON, sem texto adicional, sem markdown, sem \`\`\`json. Apenas o objeto JSON puro.`;
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: AI_CONFIG.MODEL,
         messages: [
           { role: 'system', content: 'Você é um assistente que analisa tickets de suporte e retorna apenas JSON.' },
           { role: 'user', content: prompt },
         ],
         max_tokens: 300,
         temperature: 0.5,
+      }, {
+        timeout: AI_CONFIG.TIMEOUT,
       });
 
       const text = completion.choices[0]?.message?.content || '{}';

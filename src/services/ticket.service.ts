@@ -52,6 +52,56 @@ export const ticketService = {
     return data || [];
   },
 
+  /**
+   * Get paginated tickets with optional filters
+   */
+  async getTicketsPaginated(options: {
+    userId?: string;
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    priority?: string;
+    search?: string;
+  } = {}): Promise<{ data: Ticket[]; total: number }> {
+    const { userId, page = 1, pageSize = 20, status, priority, search } = options;
+
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from('tickets')
+      .select(`
+        *,
+        user:users(*)
+      `, { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    if (priority) {
+      query = query.eq('priority', priority);
+    }
+
+    if (search) {
+      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,customer_name.ilike.%${search}%,customer_email.ilike.%${search}%`);
+    }
+
+    // Apply pagination
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+    return { data: data || [], total: count || 0 };
+  },
+
   async getTicketById(ticketId: string): Promise<Ticket | null> {
     const { data, error } = await supabase
       .from('tickets')
