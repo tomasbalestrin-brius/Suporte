@@ -11,7 +11,9 @@
     "supabase:login": "supabase login",
     "supabase:link": "supabase link",
     "supabase:deploy": "supabase functions deploy sync-emails",
+    "supabase:deploy-email": "supabase functions deploy send-ticket-resolved-email",
     "supabase:logs": "supabase functions logs sync-emails --follow",
+    "supabase:logs-email": "supabase functions logs send-ticket-resolved-email --follow",
     "supabase:test": "supabase functions invoke sync-emails --no-verify-jwt"
   },
   "dependencies": {
