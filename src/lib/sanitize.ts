@@ -39,7 +39,6 @@ export function sanitizeText(text: string): string {
 export function sanitizeRichText(html: string): string {
   if (!html) return '';
 
-  const allowedTags = ['p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li', 'a'];
   const temp = document.createElement('div');
   temp.innerHTML = html;
 
