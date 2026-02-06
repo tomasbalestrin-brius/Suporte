@@ -43,6 +43,12 @@ CREATE POLICY "Admins can update any user"
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
   );
 
 -- Admins can insert users
@@ -99,6 +105,12 @@ CREATE POLICY "Admins can update tickets"
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
   );
 
 -- Only admins can delete tickets
@@ -142,6 +154,12 @@ CREATE POLICY "Admins can update messages"
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
   );
 
 -- Only admins can delete messages
@@ -174,6 +192,12 @@ CREATE POLICY "Admins can manage categories"
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
   );
 
 -- ============================================
@@ -195,6 +219,12 @@ CREATE POLICY "Admins can manage knowledge base"
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
   );
 
 -- ============================================
@@ -206,6 +236,12 @@ CREATE POLICY "Admins can manage webhooks"
   ON public.webhooks
   FOR ALL
   USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  )
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
@@ -225,6 +261,12 @@ CREATE POLICY "Admins can manage email integrations"
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
   );
 
 -- ============================================
@@ -236,6 +278,12 @@ CREATE POLICY "Admins can manage instagram integrations"
   ON public.instagram_integrations
   FOR ALL
   USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  )
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
@@ -272,6 +320,12 @@ CREATE POLICY "Admins can update ai feedback"
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
     )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
   );
 
 -- Only admins can delete AI feedback
@@ -300,6 +354,12 @@ CREATE POLICY "Admins can manage quick responses"
   ON public.quick_responses
   FOR ALL
   USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  )
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
