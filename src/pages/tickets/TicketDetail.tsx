@@ -83,19 +83,24 @@ export function TicketDetailPage() {
       const data = await messageService.getMessages(id);
       setMessages(data);
 
-      // Load feedback for AI messages
-      const feedbackMap: Record<string, 'positive' | 'negative'> = {};
-      for (const message of data.filter(m => m.is_ai)) {
+      // Load feedback for AI messages (optimized - single query)
+      const aiMessages = data.filter(m => m.is_ai);
+      const aiMessageIds = aiMessages.map(m => m.id);
+
+      if (aiMessageIds.length > 0) {
         try {
-          const feedback = await aiFeedbackService.getFeedbackByMessage(message.id);
-          if (feedback) {
-            feedbackMap[message.id] = feedback.rating;
-          }
+          const feedbacks = await aiFeedbackService.getFeedbackByMessages(aiMessageIds);
+          const feedbackMap: Record<string, 'positive' | 'negative'> = {};
+
+          Object.entries(feedbacks).forEach(([messageId, feedback]) => {
+            feedbackMap[messageId] = feedback.rating;
+          });
+
+          setMessageFeedback(feedbackMap);
         } catch (error) {
-          // Ignore errors for individual messages
+          console.error('Error loading feedback:', error);
         }
       }
-      setMessageFeedback(feedbackMap);
 
       // Mark initial load as complete
       setIsInitialLoad(false);
