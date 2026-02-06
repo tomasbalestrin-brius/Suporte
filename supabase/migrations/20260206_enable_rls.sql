@@ -17,21 +17,11 @@ ALTER TABLE public.quick_responses ENABLE ROW LEVEL SECURITY;
 -- USERS TABLE POLICIES
 -- ============================================
 
--- Users can read their own data
-CREATE POLICY "Users can view own profile"
+-- Admin can view own profile (needed for auth)
+CREATE POLICY "Admin can view own profile"
   ON public.users
   FOR SELECT
   USING (auth.uid() = id);
-
--- Users can update their own profile (but not role)
-CREATE POLICY "Users can update own profile"
-  ON public.users
-  FOR UPDATE
-  USING (auth.uid() = id)
-  WITH CHECK (
-    auth.uid() = id AND
-    role = (SELECT role FROM public.users WHERE id = auth.uid()) -- Prevent role escalation
-  );
 
 -- Admins can view all users
 CREATE POLICY "Admins can view all users"
@@ -55,39 +45,66 @@ CREATE POLICY "Admins can update any user"
     )
   );
 
--- ============================================
--- TICKETS TABLE POLICIES
--- ============================================
-
--- Students can view their own tickets
-CREATE POLICY "Students can view own tickets"
-  ON public.tickets
-  FOR SELECT
-  USING (
-    user_id = auth.uid() OR
+-- Admins can insert users
+CREATE POLICY "Admins can create users"
+  ON public.users
+  FOR INSERT
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'admin'
     )
   );
 
--- Students can create tickets
-CREATE POLICY "Students can create tickets"
+-- Admins can delete users
+CREATE POLICY "Admins can delete users"
+  ON public.users
+  FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- ============================================
+-- TICKETS TABLE POLICIES
+-- ============================================
+
+-- Allow anonymous ticket creation (public form)
+-- Note: Tickets are created through a service role key or anon key
+-- This policy allows INSERT even without authentication
+CREATE POLICY "Anyone can create tickets"
   ON public.tickets
   FOR INSERT
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (true); -- Allow any insert
 
--- Students can update their own tickets (limited fields)
-CREATE POLICY "Students can update own tickets"
+-- Only admins can view tickets
+CREATE POLICY "Admins can view all tickets"
+  ON public.tickets
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Only admins can update tickets
+CREATE POLICY "Admins can update tickets"
   ON public.tickets
   FOR UPDATE
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
 
--- Admins can do everything with tickets
-CREATE POLICY "Admins can manage all tickets"
+-- Only admins can delete tickets
+CREATE POLICY "Admins can delete tickets"
   ON public.tickets
-  FOR ALL
+  FOR DELETE
   USING (
     EXISTS (
       SELECT 1 FROM public.users
@@ -99,43 +116,35 @@ CREATE POLICY "Admins can manage all tickets"
 -- MESSAGES TABLE POLICIES
 -- ============================================
 
--- Users can view messages from tickets they have access to
-CREATE POLICY "Users can view messages from their tickets"
+-- Allow message creation (public ticket form + admin responses)
+CREATE POLICY "Anyone can create messages"
+  ON public.messages
+  FOR INSERT
+  WITH CHECK (true); -- Allow any insert
+
+-- Only admins can view messages
+CREATE POLICY "Admins can view messages"
   ON public.messages
   FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM public.tickets
-      WHERE tickets.id = messages.ticket_id
-      AND (
-        tickets.user_id = auth.uid() OR
-        EXISTS (
-          SELECT 1 FROM public.users
-          WHERE id = auth.uid() AND role = 'admin'
-        )
-      )
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
     )
   );
 
--- Users can create messages on their tickets
-CREATE POLICY "Users can create messages on their tickets"
+-- Only admins can update messages
+CREATE POLICY "Admins can update messages"
   ON public.messages
-  FOR INSERT
-  WITH CHECK (
+  FOR UPDATE
+  USING (
     EXISTS (
-      SELECT 1 FROM public.tickets
-      WHERE tickets.id = messages.ticket_id
-      AND (
-        tickets.user_id = auth.uid() OR
-        EXISTS (
-          SELECT 1 FROM public.users
-          WHERE id = auth.uid() AND role = 'admin'
-        )
-      )
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
     )
   );
 
--- Admins can delete messages
+-- Only admins can delete messages
 CREATE POLICY "Admins can delete messages"
   ON public.messages
   FOR DELETE
@@ -237,41 +246,42 @@ CREATE POLICY "Admins can manage instagram integrations"
 -- AI FEEDBACK POLICIES
 -- ============================================
 
--- Users can view feedback from their tickets
-CREATE POLICY "Users can view ai feedback from their tickets"
+-- Allow anyone to create AI feedback (including anonymous users)
+CREATE POLICY "Anyone can create ai feedback"
+  ON public.ai_feedback
+  FOR INSERT
+  WITH CHECK (true); -- Allow any insert
+
+-- Only admins can view AI feedback
+CREATE POLICY "Admins can view ai feedback"
   ON public.ai_feedback
   FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM public.messages m
-      JOIN public.tickets t ON t.id = m.ticket_id
-      WHERE m.id = ai_feedback.message_id
-      AND (
-        t.user_id = auth.uid() OR
-        EXISTS (
-          SELECT 1 FROM public.users
-          WHERE id = auth.uid() AND role = 'admin'
-        )
-      )
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
     )
   );
 
--- Users can create feedback on their tickets
-CREATE POLICY "Users can create ai feedback on their tickets"
+-- Only admins can update AI feedback
+CREATE POLICY "Admins can update ai feedback"
   ON public.ai_feedback
-  FOR INSERT
-  WITH CHECK (
+  FOR UPDATE
+  USING (
     EXISTS (
-      SELECT 1 FROM public.messages m
-      JOIN public.tickets t ON t.id = m.ticket_id
-      WHERE m.id = ai_feedback.message_id
-      AND (
-        t.user_id = auth.uid() OR
-        EXISTS (
-          SELECT 1 FROM public.users
-          WHERE id = auth.uid() AND role = 'admin'
-        )
-      )
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Only admins can delete AI feedback
+CREATE POLICY "Admins can delete ai feedback"
+  ON public.ai_feedback
+  FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'admin'
     )
   );
 
