@@ -82,6 +82,33 @@ export const aiFeedbackService = {
   },
 
   /**
+   * Busca feedbacks de múltiplas mensagens de uma vez (otimizado)
+   * Evita N+1 queries ao carregar feedback em lote
+   */
+  async getFeedbackByMessages(messageIds: string[]): Promise<Record<string, AIFeedback>> {
+    if (messageIds.length === 0) {
+      return {};
+    }
+
+    const { data, error } = await supabase
+      .from('ai_feedback')
+      .select('*')
+      .in('message_id', messageIds);
+
+    if (error) throw error;
+
+    // Converte array para objeto indexado por message_id
+    const feedbackMap: Record<string, AIFeedback> = {};
+    data?.forEach((feedback) => {
+      if (feedback.message_id) {
+        feedbackMap[feedback.message_id] = feedback;
+      }
+    });
+
+    return feedbackMap;
+  },
+
+  /**
    * Busca todos os feedbacks (admin)
    */
   async getAllFeedback(limit = 100): Promise<AIFeedback[]> {

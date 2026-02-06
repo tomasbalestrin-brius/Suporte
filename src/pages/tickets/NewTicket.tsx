@@ -12,6 +12,7 @@ import { Loader2, ArrowLeft, Ticket as TicketIcon } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { validateCPF, validateEmail, validatePhone } from '@/lib/validators';
 import type { Category } from '@/types';
+import type { CreateTicketDTO } from '@/types/database';
 
 export function NewTicketPage() {
   const navigate = useNavigate();
@@ -130,7 +131,7 @@ export function NewTicketPage() {
 
     setLoading(true);
     try {
-      const newTicket = await createTicket({
+      const ticketData: Omit<CreateTicketDTO, 'user_id'> = {
         title: `${product} - ${customerName}`,
         description: necessity,
         category,
@@ -140,7 +141,9 @@ export function NewTicketPage() {
         customer_cpf: customerCpf,
         customer_phone: customerPhone,
         product,
-      } as any);
+      };
+
+      const newTicket = await createTicket(ticketData);
 
       // Ensure ticket was created before navigating
       if (newTicket && newTicket.id) {

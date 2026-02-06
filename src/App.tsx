@@ -2,6 +2,7 @@ import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { AdminRoute } from './components/auth/AdminRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuthStore } from './store/authStore';
 import { Loader2 } from 'lucide-react';
@@ -54,7 +55,7 @@ function App() {
           <Route path="/tickets/:ticketId/success" element={<TicketSuccessPage />} />
           <Route path="/auth/gmail/callback" element={<GmailCallbackPage />} />
 
-          {/* Protected Admin Routes */}
+          {/* Protected Routes */}
           <Route path="/" element={
             <ProtectedRoute>
               <Layout />
@@ -63,13 +64,15 @@ function App() {
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="tickets" element={<TicketListPage />} />
             <Route path="tickets/:id" element={<TicketDetailPage />} />
-            <Route path="admin/knowledge" element={<KnowledgeBasePage />} />
-            <Route path="admin/webhooks" element={<WebhooksPage />} />
-            <Route path="admin/quick-replies" element={<QuickRepliesPage />} />
-            <Route path="admin/ai-feedback" element={<AIFeedbackPage />} />
-            <Route path="admin/users" element={<UsersPage />} />
-            <Route path="admin/email-integration" element={<EmailIntegrationPage />} />
-            <Route path="admin/instagram-integration" element={<InstagramIntegrationPage />} />
+
+            {/* Admin Only Routes */}
+            <Route path="admin/knowledge" element={<AdminRoute><KnowledgeBasePage /></AdminRoute>} />
+            <Route path="admin/webhooks" element={<AdminRoute><WebhooksPage /></AdminRoute>} />
+            <Route path="admin/quick-replies" element={<AdminRoute><QuickRepliesPage /></AdminRoute>} />
+            <Route path="admin/ai-feedback" element={<AdminRoute><AIFeedbackPage /></AdminRoute>} />
+            <Route path="admin/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
+            <Route path="admin/email-integration" element={<AdminRoute><EmailIntegrationPage /></AdminRoute>} />
+            <Route path="admin/instagram-integration" element={<AdminRoute><InstagramIntegrationPage /></AdminRoute>} />
           </Route>
 
           {/* 404 */}

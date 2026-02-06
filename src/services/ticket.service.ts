@@ -66,10 +66,23 @@ export const ticketService = {
     return data;
   },
 
-  async updateTicket(ticketId: string, updates: Partial<Ticket>) {
-    // Busca ticket atual para comparar status
+  async updateTicket(ticketId: string, updates: Partial<Ticket>, expectedVersion?: number) {
+    // Busca ticket atual para comparar status e version
     const currentTicket = await this.getTicketById(ticketId);
-    const oldStatus = currentTicket?.status;
+
+    if (!currentTicket) {
+      throw new Error('Ticket not found');
+    }
+
+    const oldStatus = currentTicket.status;
+    const currentVersion = (currentTicket as any).version || 1;
+
+    // Se uma versão esperada foi fornecida, verifica se coincide (optimistic locking)
+    if (expectedVersion !== undefined && currentVersion !== expectedVersion) {
+      throw new Error(
+        'Ticket was modified by another user. Please refresh and try again.'
+      );
+    }
 
     const updateData: any = { ...updates };
 
@@ -82,10 +95,19 @@ export const ticketService = {
       .from('tickets')
       .update(updateData)
       .eq('id', ticketId)
+      .eq('version', currentVersion) // Garante que só atualiza se versão não mudou
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned - versão mudou entre o SELECT e o UPDATE
+        throw new Error(
+          'Ticket was modified by another user. Please refresh and try again.'
+        );
+      }
+      throw error;
+    }
 
     // Se o status mudou, dispara webhook
     if (updates.status && oldStatus && oldStatus !== updates.status) {

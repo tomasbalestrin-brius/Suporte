@@ -1,11 +1,19 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
+const ALLOWED_ORIGINS = Deno.env.get('ALLOWED_ORIGINS') || 'https://suporte-eight.vercel.app,http://localhost:5173'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+// Function to get CORS headers based on request origin
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOriginsList = ALLOWED_ORIGINS.split(',')
+  const allowedOrigin = origin && allowedOriginsList.includes(origin) ? origin : allowedOriginsList[0]
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+  }
 }
 
 interface SendEmailRequest {
@@ -19,6 +27,9 @@ interface SendEmailRequest {
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin')
+  const corsHeaders = getCorsHeaders(origin)
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
