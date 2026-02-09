@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/store/authStore';
-import { useToast } from '@/hooks/useToast';
+// import { supabase } from '@/lib/supabase'; // Temporariamente desabilitado
+// import { useAuthStore } from '@/store/authStore'; // Temporariamente desabilitado
+// import { useToast } from '@/hooks/useToast'; // Temporariamente desabilitado
 // import { useSupabaseSubscription } from '@/hooks/useSupabaseSubscription'; // Temporariamente desabilitado
 
 export interface Notification {
@@ -16,8 +16,8 @@ export interface Notification {
 }
 
 export function useNotifications() {
-  const { user } = useAuthStore();
-  const { toast } = useToast();
+  // const { user } = useAuthStore(); // Temporariamente desabilitado
+  // const { toast } = useToast(); // Temporariamente desabilitado
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -196,7 +196,8 @@ export function useNotifications() {
     return newNotification;
   }, []);
 
-  // Add notification and show toast
+  // Add notification and show toast - TEMPORARIAMENTE DESABILITADO
+  /*
   const addNotificationWithToast = useCallback((notification: Omit<Notification, 'id' | 'read' | 'created_at'>) => {
     const newNotification = addNotification(notification);
 
@@ -209,6 +210,7 @@ export function useNotifications() {
 
     return newNotification;
   }, [addNotification, toast]);
+  */
 
   const markAsRead = useCallback((id: string) => {
     setNotifications(prev =>
@@ -252,6 +254,8 @@ export function useNotifications() {
   };
 }
 
+// TEMPORARIAMENTE DESABILITADO
+/*
 function getStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     open: 'Aberto',
@@ -261,6 +265,7 @@ function getStatusLabel(status: string): string {
   };
   return labels[status] || status;
 }
+*/
 
 function playNotificationSound() {
   try {
