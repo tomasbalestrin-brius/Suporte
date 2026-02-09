@@ -3,6 +3,7 @@ import { knowledgeService } from '@/services/knowledge.service';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +28,7 @@ export function KnowledgeBasePage() {
   const [knowledge, setKnowledge] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -156,9 +158,9 @@ export function KnowledgeBasePage() {
   };
 
   const filteredKnowledge = knowledge.filter(item =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase())
+    item.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+    item.content.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+    item.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
   return (

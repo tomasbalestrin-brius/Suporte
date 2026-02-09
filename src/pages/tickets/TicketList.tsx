@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketStore } from '@/store/ticketStore';
 import { ticketService } from '@/services/ticket.service';
 import { usePagination } from '@/hooks/usePagination';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,35 +18,20 @@ import type { Ticket as TicketType } from '@/types';
 export function TicketListPage() {
   const navigate = useNavigate();
   const { fetchStats } = useTicketStore();
-  // const { handleRealtimeUpdate } = useTicketStore(); // Temporariamente desabilitado
   const [tickets, setTickets] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 500);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [refreshing, setRefreshing] = useState(false);
-  // const statsUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Temporariamente desabilitado
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [paginationState, paginationActions] = usePagination({ initialPageSize: 20 });
 
-  // Debounce search term
+  // Reset to first page when debounced search changes
   useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    searchTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      paginationActions.setPage(1); // Reset to first page on search
-    }, 500);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
+    paginationActions.setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]); // Only depend on searchTerm
+  }, [debouncedSearch]);
 
   // Fetch tickets when pagination or filters change
   useEffect(() => {
