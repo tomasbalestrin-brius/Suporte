@@ -52,7 +52,9 @@ export function TicketListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paginationState.page, paginationState.pageSize, debouncedSearch, filterStatus]);
 
-  // Subscription otimizada em tempo real
+  // Subscription otimizada em tempo real - TEMPORARIAMENTE DESABILITADA
+  // devido a erro de "mismatch between server and client bindings"
+  /*
   useEffect(() => {
     const channel = ticketService.subscribeToTickets((payload) => {
       // Update tickets in real-time
@@ -75,6 +77,7 @@ export function TicketListPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
+  */
 
   const loadData = async () => {
     setLoading(true);

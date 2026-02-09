@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/useToast';
-import { useSupabaseSubscription } from '@/hooks/useSupabaseSubscription';
+// import { useSupabaseSubscription } from '@/hooks/useSupabaseSubscription'; // Temporariamente desabilitado
 
 export interface Notification {
   id: string;
@@ -43,7 +43,8 @@ export function useNotifications() {
     }
   }, [notifications]);
 
-  // Callback to handle ticket changes
+  // Callback to handle ticket changes - TEMPORARIAMENTE DESABILITADO
+  /*
   const handleTicketChange = useCallback((payload: any) => {
     try {
       if (payload.eventType === 'INSERT') {
@@ -100,8 +101,11 @@ export function useNotifications() {
       console.error('Error processing message notification:', error);
     }
   }, [user]);
+  */
 
   // Subscribe to ticket changes with improved error handling
+  // TEMPORARIAMENTE DESABILITADO devido a erro de "mismatch between server and client bindings"
+  /*
   useSupabaseSubscription(
     () => {
       if (!user) return null;
@@ -161,6 +165,7 @@ export function useNotifications() {
     },
     [user, handleMessageChange]
   );
+  */
 
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'read' | 'created_at'>) => {
     const newNotification: Notification = {
