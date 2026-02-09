@@ -153,9 +153,25 @@ export function TicketDetailPage() {
   };
 
   const handleUpdateStatus = async (status: string) => {
-    if (!id || storeUpdating) return;
+    console.log('🎯 handleUpdateStatus chamado', {
+      status,
+      id,
+      storeUpdating,
+      currentStatus: currentTicket?.status
+    });
+
+    if (!id || storeUpdating) {
+      console.warn('⚠️ Update bloqueado:', {
+        hasId: !!id,
+        isUpdating: storeUpdating
+      });
+      return;
+    }
+
     try {
       const previousStatus = currentTicket?.status;
+      console.log('📝 Chamando updateTicket...', { id, newStatus: status, previousStatus });
+
       await updateTicket(id, { status: status as 'open' | 'in_progress' | 'resolved' | 'closed' });
 
       // Debug logs
