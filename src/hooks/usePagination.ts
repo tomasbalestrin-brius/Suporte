@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 export interface PaginationOptions {
   initialPage?: number;
@@ -34,16 +34,17 @@ export function usePagination(options: PaginationOptions = {}): [PaginationState
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
 
   const setPage = useCallback((newPage: number) => {
-    setPageState(Math.max(1, Math.min(newPage, totalPages)));
-  }, [totalPages]);
+    console.log('📄 usePagination.setPage chamado:', { newPage, currentPage: page });
+    setPageState(Math.max(1, newPage));
+  }, [page]);
 
   const nextPage = useCallback(() => {
-    setPage(page + 1);
-  }, [page, setPage]);
+    setPageState(prev => prev + 1);
+  }, []);
 
   const prevPage = useCallback(() => {
-    setPage(page - 1);
-  }, [page, setPage]);
+    setPageState(prev => Math.max(1, prev - 1));
+  }, []);
 
   const setPageSize = useCallback((size: number) => {
     setPageSizeState(size);
@@ -56,21 +57,21 @@ export function usePagination(options: PaginationOptions = {}): [PaginationState
     setTotalItems(0);
   }, [initialPage, initialPageSize]);
 
-  const state: PaginationState = {
+  const state: PaginationState = useMemo(() => ({
     page,
     pageSize,
     totalItems,
     totalPages,
-  };
+  }), [page, pageSize, totalItems, totalPages]);
 
-  const actions: PaginationActions = {
+  const actions: PaginationActions = useMemo(() => ({
     setPage,
     nextPage,
     prevPage,
     setPageSize,
     setTotalItems,
     reset,
-  };
+  }), [setPage, nextPage, prevPage, setPageSize, reset]);
 
   return [state, actions];
 }
