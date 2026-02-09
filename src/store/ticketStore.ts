@@ -67,13 +67,16 @@ export const useTicketStore = create<TicketState>((set, get) => ({
     // Prevent simultaneous updates to the same ticket
     const state = get();
     if (state.updating) {
-      console.warn('Update already in progress, skipping...');
+      console.warn('⚠️ Update já em progresso, ignorando...');
       return;
     }
 
+    console.log('🔄 Store: Iniciando update do ticket', { ticketId, updates });
     set({ updating: true });
     try {
       const updatedTicket = await ticketService.updateTicket(ticketId, updates);
+      console.log('✅ Store: Ticket atualizado, atualizando estado', updatedTicket);
+
       set((state) => ({
         tickets: state.tickets.map((t) =>
           t.id === ticketId ? updatedTicket : t
@@ -84,7 +87,10 @@ export const useTicketStore = create<TicketState>((set, get) => ({
             : state.currentTicket,
         updating: false,
       }));
+
+      console.log('✅ Store: Estado atualizado com sucesso');
     } catch (error) {
+      console.error('❌ Store: Erro ao atualizar ticket', error);
       set({ updating: false });
       throw error;
     }

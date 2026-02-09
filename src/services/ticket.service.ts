@@ -117,7 +117,7 @@ export const ticketService = {
   },
 
   async updateTicket(ticketId: string, updates: Partial<Ticket>, expectedVersion?: number) {
-    // Busca ticket atual para comparar status e version
+    // Busca ticket atual para comparar status
     const currentTicket = await this.getTicketById(ticketId);
 
     if (!currentTicket) {
@@ -125,14 +125,6 @@ export const ticketService = {
     }
 
     const oldStatus = currentTicket.status;
-    const currentVersion = (currentTicket as any).version || 1;
-
-    // Se uma versão esperada foi fornecida, verifica se coincide (optimistic locking)
-    if (expectedVersion !== undefined && currentVersion !== expectedVersion) {
-      throw new Error(
-        'Ticket was modified by another user. Please refresh and try again.'
-      );
-    }
 
     const updateData: any = { ...updates };
 
@@ -141,23 +133,26 @@ export const ticketService = {
       updateData.resolved_at = new Date().toISOString();
     }
 
+    // Simplificação temporária: remover optimistic locking para debug
+    console.log('🔍 Tentando atualizar ticket:', {
+      ticketId,
+      updateData,
+      currentStatus: oldStatus,
+    });
+
     const { data, error } = await supabase
       .from('tickets')
       .update(updateData)
       .eq('id', ticketId)
-      .eq('version', currentVersion) // Garante que só atualiza se versão não mudou
       .select('*')
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows returned - versão mudou entre o SELECT e o UPDATE
-        throw new Error(
-          'Ticket was modified by another user. Please refresh and try again.'
-        );
-      }
+      console.error('❌ Erro no update do ticket:', error);
       throw error;
     }
+
+    console.log('✅ Ticket atualizado com sucesso:', data);
 
     // Se o status mudou, dispara webhook
     if (updates.status && oldStatus && oldStatus !== updates.status) {
