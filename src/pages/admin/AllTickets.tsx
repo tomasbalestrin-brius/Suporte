@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Search, Ticket, Users } from 'lucide-react';
 import { formatDate, getRelativeTime, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useDebounce } from '@/hooks/useDebounce';
 import type { Ticket as TicketType } from '@/types';
 
 export function AllTicketsPage() {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<TicketType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [loading, setLoading] = useState(true);
 
@@ -35,10 +37,10 @@ export function AllTicketsPage() {
 
   const filteredTickets = tickets.filter((ticket) => {
     const matchesSearch =
-      ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.user?.email.toLowerCase().includes(searchTerm.toLowerCase());
+      ticket.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      ticket.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      (ticket.user?.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ?? false) ||
+      (ticket.user?.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ?? false);
 
     const matchesStatus =
       filterStatus === 'all' || ticket.status === filterStatus;

@@ -153,51 +153,29 @@ export function TicketDetailPage() {
   };
 
   const handleUpdateStatus = async (status: string) => {
-    console.log('🎯 handleUpdateStatus chamado', {
-      status,
-      id,
-      storeUpdating,
-      currentStatus: currentTicket?.status
-    });
-
     if (!id || storeUpdating) {
-      console.warn('⚠️ Update bloqueado:', {
-        hasId: !!id,
-        isUpdating: storeUpdating
-      });
       return;
     }
 
     try {
       const previousStatus = currentTicket?.status;
-      console.log('📝 Chamando updateTicket...', { id, newStatus: status, previousStatus });
 
       await updateTicket(id, { status: status as 'open' | 'in_progress' | 'resolved' | 'closed' });
 
-      // Debug logs
-      console.log('🔍 Debug - Status Update:', {
-        status,
-        previousStatus,
-        hasEmail: !!currentTicket?.customer_email,
-        email: currentTicket?.customer_email,
-        isResolved: status === 'resolved',
-        wasPreviouslyResolved: previousStatus === 'resolved',
-        shouldSendEmail: status === 'resolved' && previousStatus !== 'resolved' && !!currentTicket?.customer_email,
+      // Show success toast
+      toast({
+        variant: "success",
+        title: "Status atualizado!",
+        description: `O ticket foi marcado como "${status}".`,
       });
 
       // Se mudou para "resolved" e tem email do cliente, envia notificação
       if (status === 'resolved' && previousStatus !== 'resolved' && currentTicket?.customer_email) {
-        console.log('✅ Condições atendidas! Tentando enviar email...');
-
         try {
           // Verifica se o Resend está configurado
           const isConfigured = emailNotificationService.isConfigured();
-          const config = emailNotificationService.getConfig();
-          console.log('📧 Configuração Resend:', config);
-          console.log('🔑 isConfigured:', isConfigured);
 
           if (isConfigured) {
-            console.log('📤 Enviando email para:', currentTicket.customer_email);
 
             await emailNotificationService.sendTicketResolvedEmail({
               ticketId: id,
@@ -216,8 +194,6 @@ export function TicketDetailPage() {
               description: `Notificação de resolução enviada para ${currentTicket.customer_email}`,
             });
           } else {
-            console.warn('⚠️ Resend não configurado. Email não enviado.');
-            console.warn('Configuração atual:', config);
             toast({
               variant: "destructive",
               title: "Email não configurado",
@@ -225,7 +201,6 @@ export function TicketDetailPage() {
             });
           }
         } catch (emailError) {
-          console.error('❌ Erro ao enviar email de notificação:', emailError);
           // Não bloqueia a atualização do ticket se o email falhar
           toast({
             variant: "destructive",
@@ -233,13 +208,10 @@ export function TicketDetailPage() {
             description: "Ticket atualizado, mas não foi possível enviar o email de notificação.",
           });
         }
-      } else {
-        console.log('⏭️ Email não será enviado. Condições não atendidas.');
       }
 
       // O store já atualiza o currentTicket automaticamente, não precisa recarregar
     } catch (error) {
-      console.error('Error updating status:', error);
       toast({
         variant: "destructive",
         title: "Erro ao atualizar status",

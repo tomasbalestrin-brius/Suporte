@@ -69,8 +69,17 @@ export const categoryService = {
   },
 
   async reorder(categoryIds: string[]): Promise<void> {
-    for (let i = 0; i < categoryIds.length; i++) {
-      await this.updateCategory(categoryIds[i], { order_index: i });
-    }
+    // Batch update all categories in a single query
+    const updates = categoryIds.map((id, index) => ({
+      id,
+      order_index: index,
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabase
+      .from('categories')
+      .upsert(updates, { onConflict: 'id' });
+
+    if (error) throw error;
   },
 };

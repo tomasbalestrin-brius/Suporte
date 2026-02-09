@@ -3,6 +3,7 @@ import { quickReplyService, type QuickReply } from '@/services/quickReply.servic
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +28,7 @@ export function QuickRepliesPage() {
   const [replies, setReplies] = useState<QuickReply[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -161,10 +163,10 @@ export function QuickRepliesPage() {
   };
 
   const filteredReplies = replies.filter(reply =>
-    reply.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reply.shortcut.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reply.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reply.category.toLowerCase().includes(searchTerm.toLowerCase())
+    reply.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+    reply.shortcut.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+    reply.content.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+    reply.category.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
   return (
