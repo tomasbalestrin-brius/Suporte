@@ -34,7 +34,6 @@ export function usePagination(options: PaginationOptions = {}): [PaginationState
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
 
   const setPage = useCallback((newPage: number) => {
-    console.log('📄 usePagination.setPage chamado:', { newPage, currentPage: page });
     setPageState(Math.max(1, newPage));
   }, [page]);
 

@@ -1,5 +1,3 @@
-import { sanitizeText } from '@/lib/sanitize';
-
 interface SafeContentProps {
   content: string;
   className?: string;
@@ -8,16 +6,16 @@ interface SafeContentProps {
 
 /**
  * SafeContent component - Displays user-generated content safely
- * Automatically sanitizes content to prevent XSS attacks
+ * React automatically escapes HTML, providing XSS protection
+ * No need for manual sanitization or dangerouslySetInnerHTML
  */
 export function SafeContent({ content, className, preserveWhitespace = true }: SafeContentProps) {
-  const sanitized = sanitizeText(content);
-
   return (
     <div
       className={className}
       style={preserveWhitespace ? { whiteSpace: 'pre-wrap' } : undefined}
-      dangerouslySetInnerHTML={{ __html: sanitized }}
-    />
+    >
+      {content}
+    </div>
   );
 }

@@ -37,8 +37,8 @@ export function AllTicketsPage() {
     const matchesSearch =
       ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.user?.email.toLowerCase().includes(searchTerm.toLowerCase());
+      (ticket.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (ticket.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
 
     const matchesStatus =
       filterStatus === 'all' || ticket.status === filterStatus;

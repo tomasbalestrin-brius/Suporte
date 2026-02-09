@@ -174,31 +174,21 @@ export const ticketService = {
   },
 
   async getTicketStats(userId?: string): Promise<TicketStats> {
-    let query = supabase
-      .from('tickets')
-      .select('status');
-
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-
-    const { data, error } = await query;
+    // Use RPC function for efficient database aggregation
+    const { data, error } = await supabase.rpc('get_ticket_stats', {
+      user_id_param: userId || null
+    });
 
     if (error) throw error;
 
-    const stats: TicketStats = {
-      total: data?.length || 0,
+    // data is already in the correct format from the SQL function
+    return data || {
+      total: 0,
       open: 0,
       in_progress: 0,
       resolved: 0,
       closed: 0,
     };
-
-    data?.forEach((ticket) => {
-      stats[ticket.status as keyof Omit<TicketStats, 'total'>]++;
-    });
-
-    return stats;
   },
 
   subscribeToTickets(callback: (payload: any) => void) {

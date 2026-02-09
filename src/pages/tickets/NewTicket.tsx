@@ -101,36 +101,38 @@ export function NewTicketPage() {
     // Prevent double submission
     if (loading) return;
 
-    // Validações
-    if (!validateEmail(customerEmail)) {
-      toast({
-        variant: "destructive",
-        title: "Email inválido",
-        description: "Por favor, insira um email válido.",
-      });
-      return;
-    }
-
-    if (!validateCPF(customerCpf)) {
-      toast({
-        variant: "destructive",
-        title: "CPF inválido",
-        description: "Por favor, insira um CPF válido.",
-      });
-      return;
-    }
-
-    if (!validatePhone(customerPhone)) {
-      toast({
-        variant: "destructive",
-        title: "Telefone inválido",
-        description: "Por favor, insira um telefone válido com DDD.",
-      });
-      return;
-    }
-
+    // Set loading IMMEDIATELY to prevent double clicks
     setLoading(true);
+
     try {
+      // Validações
+      if (!validateEmail(customerEmail)) {
+        toast({
+          variant: "destructive",
+          title: "Email inválido",
+          description: "Por favor, insira um email válido.",
+        });
+        return;
+      }
+
+      if (!validateCPF(customerCpf)) {
+        toast({
+          variant: "destructive",
+          title: "CPF inválido",
+          description: "Por favor, insira um CPF válido.",
+        });
+        return;
+      }
+
+      if (!validatePhone(customerPhone)) {
+        toast({
+          variant: "destructive",
+          title: "Telefone inválido",
+          description: "Por favor, insira um telefone válido com DDD.",
+        });
+        return;
+      }
+
       const ticketData: Omit<CreateTicketDTO, 'user_id'> = {
         title: `${product} - ${customerName}`,
         description: necessity,
@@ -153,10 +155,8 @@ export function NewTicketPage() {
           description: "Você será redirecionado para acompanhar o atendimento.",
         });
 
-        // Add small delay to ensure database transaction is complete
-        setTimeout(() => {
-          navigate(`/tickets/${newTicket.id}/success`);
-        }, 1000);
+        // Navigate immediately - no need to wait
+        navigate(`/tickets/${newTicket.id}/success`);
       } else {
         throw new Error('Ticket criado mas ID não retornado');
       }
@@ -167,9 +167,10 @@ export function NewTicketPage() {
         title: "Erro ao criar ticket",
         description: error.message || 'Ocorreu um erro. Tente novamente.',
       });
+    } finally {
+      // Always reset loading state
       setLoading(false);
     }
-    // Note: Don't set loading to false on success, let navigation happen
   };
 
   return (

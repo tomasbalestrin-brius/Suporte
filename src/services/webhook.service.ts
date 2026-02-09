@@ -1,4 +1,45 @@
 import { supabase } from '@/lib/supabase';
+
+/**
+ * Validates webhook URL to prevent SSRF attacks
+ */
+function validateWebhookUrl(url: string): { valid: boolean; error?: string } {
+  try {
+    const parsed = new URL(url);
+
+    // Only HTTPS in production
+    if (parsed.protocol !== 'https:' && import.meta.env.PROD) {
+      return { valid: false, error: 'Only HTTPS URLs are allowed in production' };
+    }
+
+    // Block localhost and private IPs
+    const blockedPatterns = [
+      /^localhost$/i,
+      /^127\.\d+\.\d+\.\d+$/,
+      /^0\.0\.0\.0$/,
+      /^::1$/,
+      /^169\.254\.\d+\.\d+$/, // AWS metadata
+      /^10\.\d+\.\d+\.\d+$/, // Private network
+      /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/, // Private network
+      /^192\.168\.\d+\.\d+$/, // Private network
+      /^fe80:/i, // Link-local IPv6
+      /^fd[0-9a-f]{2}:/i, // Unique local IPv6
+    ];
+
+    if (blockedPatterns.some(pattern => pattern.test(parsed.hostname))) {
+      return { valid: false, error: 'Cannot use localhost or private network addresses' };
+    }
+
+    // Block file:// and other dangerous protocols
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return { valid: false, error: 'Only HTTP/HTTPS protocols are allowed' };
+    }
+
+    return { valid: true };
+  } catch (error) {
+    return { valid: false, error: 'Invalid URL format' };
+  }
+}
 import type { Ticket } from '@/types';
 
 export interface WebhookEvent {
@@ -41,6 +82,21 @@ export const webhookService = {
       // Dispara cada webhook configurado
       const promises = webhooks.map(async (webhook) => {
         try {
+          // Validate webhook URL to prevent SSRF
+          const validation = validateWebhookUrl(webhook.url);
+          if (!validation.valid) {
+            console.error(`Invalid webhook URL for ${webhook.name}:`, validation.error);
+            await this.logWebhookExecution({
+              webhook_id: webhook.id,
+              event_type: event.event_type,
+              ticket_id: event.ticket_id,
+              status_code: 0,
+              success: false,
+              error_message: validation.error || 'Invalid URL',
+            });
+            return;
+          }
+
           const response = await fetch(webhook.url, {
             method: 'POST',
             headers: {
