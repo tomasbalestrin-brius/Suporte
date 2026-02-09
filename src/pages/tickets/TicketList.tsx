@@ -16,7 +16,8 @@ import type { Ticket as TicketType } from '@/types';
 
 export function TicketListPage() {
   const navigate = useNavigate();
-  const { fetchStats, handleRealtimeUpdate } = useTicketStore();
+  const { fetchStats } = useTicketStore();
+  // const { handleRealtimeUpdate } = useTicketStore(); // Temporariamente desabilitado
   const [tickets, setTickets] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,7 +25,7 @@ export function TicketListPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [refreshing, setRefreshing] = useState(false);
-  const statsUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // const statsUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Temporariamente desabilitado
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [paginationState, paginationActions] = usePagination({ initialPageSize: 20 });
 
