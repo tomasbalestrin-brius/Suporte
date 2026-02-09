@@ -43,7 +43,8 @@ export function TicketListPage() {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchTerm, paginationActions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]); // Only depend on searchTerm
 
   // Fetch tickets when pagination or filters change
   useEffect(() => {
