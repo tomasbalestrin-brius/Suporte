@@ -116,7 +116,7 @@ export const ticketService = {
     return data;
   },
 
-  async updateTicket(ticketId: string, updates: Partial<Ticket>, expectedVersion?: number) {
+  async updateTicket(ticketId: string, updates: Partial<Ticket>) {
     // Busca ticket atual para comparar status
     const currentTicket = await this.getTicketById(ticketId);
 
