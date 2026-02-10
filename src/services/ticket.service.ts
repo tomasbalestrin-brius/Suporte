@@ -174,20 +174,29 @@ export const ticketService = {
   },
 
   async getTicketStats(userId?: string): Promise<TicketStats> {
-    // Use RPC function for efficient database aggregation
-    const { data, error } = await supabase.rpc('get_ticket_stats', {
-      user_id_param: userId || null
-    });
+    // Run parallel count queries for each status - efficient and doesn't require RPC
+    const baseQuery = () => {
+      let q = supabase.from('tickets').select('*', { count: 'exact', head: true });
+      if (userId) q = q.eq('user_id', userId);
+      return q;
+    };
 
-    if (error) throw error;
+    const [total, open, in_progress, resolved, closed] = await Promise.all([
+      baseQuery(),
+      baseQuery().eq('status', 'open'),
+      baseQuery().eq('status', 'in_progress'),
+      baseQuery().eq('status', 'resolved'),
+      baseQuery().eq('status', 'closed'),
+    ]);
 
-    // data is already in the correct format from the SQL function
-    return data || {
-      total: 0,
-      open: 0,
-      in_progress: 0,
-      resolved: 0,
-      closed: 0,
+    if (total.error) throw total.error;
+
+    return {
+      total: total.count ?? 0,
+      open: open.count ?? 0,
+      in_progress: in_progress.count ?? 0,
+      resolved: resolved.count ?? 0,
+      closed: closed.count ?? 0,
     };
   },
 
