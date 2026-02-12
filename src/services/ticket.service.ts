@@ -133,35 +133,30 @@ export const ticketService = {
       updateData.resolved_at = new Date().toISOString();
     }
 
-    // Simplificação temporária: remover optimistic locking para debug
-    console.log('🔍 Tentando atualizar ticket:', {
-      ticketId,
-      updateData,
-      currentStatus: oldStatus,
-    });
-
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('tickets')
       .update(updateData)
-      .eq('id', ticketId)
-      .select('*')
-      .single();
+      .eq('id', ticketId);
 
     if (error) {
-      console.error('❌ Erro no update do ticket:', error);
       throw error;
     }
 
-    console.log('✅ Ticket atualizado com sucesso:', data);
+    // Busca o ticket atualizado com join do usuário para manter o estado completo na UI
+    const updatedTicket = await this.getTicketById(ticketId);
+
+    if (!updatedTicket) {
+      throw new Error('Failed to fetch updated ticket');
+    }
 
     // Se o status mudou, dispara webhook
     if (updates.status && oldStatus && oldStatus !== updates.status) {
-      webhookService.notifyStatusChange(ticketId, oldStatus, updates.status, data).catch((err) => {
+      webhookService.notifyStatusChange(ticketId, oldStatus, updates.status, updatedTicket).catch((err) => {
         console.error('Error triggering status change webhook:', err);
       });
     }
 
-    return data;
+    return updatedTicket;
   },
 
   async deleteTicket(ticketId: string) {
