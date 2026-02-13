@@ -217,12 +217,14 @@ export function TicketChatPage() {
         </div>
 
         {/* Success / Status banner */}
-        <Card className="glass border-green-500/20 bg-green-500/5">
+        <Card className={`glass ${isClosed ? 'border-blue-500/20 bg-blue-500/5' : 'border-green-500/20 bg-green-500/5'}`}>
           <CardHeader className="text-center pb-3">
-            <div className="mx-auto w-14 h-14 bg-green-500/20 rounded-full flex items-center justify-center mb-3">
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
+            <div className={`mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-3 ${isClosed ? 'bg-blue-500/20' : 'bg-green-500/20'}`}>
+              <CheckCircle2 className={`w-8 h-8 ${isClosed ? 'text-blue-400' : 'text-green-500'}`} />
             </div>
-            <CardTitle className="text-xl text-white">Ticket Aberto com Sucesso!</CardTitle>
+            <CardTitle className="text-xl text-white">
+              {ticket.status === 'resolved' ? 'Ticket Resolvido!' : ticket.status === 'closed' ? 'Ticket Encerrado' : 'Ticket Aberto com Sucesso!'}
+            </CardTitle>
             <CardDescription className="text-base">
               Protocolo: <span className="font-mono font-bold text-white">{ticket.id.slice(0, 8).toUpperCase()}</span>
             </CardDescription>
@@ -298,12 +300,14 @@ export function TicketChatPage() {
               <CardTitle className="text-white">Chat de Atendimento</CardTitle>
             </div>
             <CardDescription>
-              Acompanhe as respostas da nossa equipe em tempo real
+              {isClosed
+                ? 'Ticket encerrado — o histórico completo da conversa está disponível abaixo'
+                : 'Acompanhe as respostas da nossa equipe em tempo real'}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            {/* Messages area */}
-            <div className="px-4 pb-2 space-y-3 min-h-[200px] max-h-[400px] overflow-y-auto">
+            {/* Messages area — sem limite de altura quando fechado para preservar histórico visível */}
+            <div className={`px-4 pb-2 space-y-3 overflow-y-auto ${isClosed ? 'min-h-[100px]' : 'min-h-[200px] max-h-[400px]'}`}>
               {messages.length === 0 ? (
                 <div className="text-center py-10">
                   <Bot className="mx-auto h-10 w-10 text-gray-600 mb-3" />
@@ -350,9 +354,12 @@ export function TicketChatPage() {
             {/* Input */}
             <div className="px-4 pb-4 pt-2 border-t border-white/10">
               {isClosed ? (
-                <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-400">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span>{ticket.status === 'resolved' ? 'Ticket resolvido.' : 'Ticket encerrado.'}</span>
+                <div className="flex flex-col items-center gap-1 py-3 text-sm text-center">
+                  <div className="flex items-center gap-2 text-green-400 font-medium">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>{ticket.status === 'resolved' ? 'Ticket resolvido com sucesso!' : 'Ticket encerrado.'}</span>
+                  </div>
+                  <p className="text-xs text-gray-500">O histórico completo desta conversa permanece disponível acima para sua consulta.</p>
                 </div>
               ) : (
                 <form onSubmit={handleSendMessage} className="flex gap-2">
