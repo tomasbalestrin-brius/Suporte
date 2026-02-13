@@ -50,23 +50,43 @@ export function TicketChatPage() {
     }
   }, [messages, isInitialLoad, scrollToBottom]);
 
-  // Subscription em tempo real para o ticket (status)
+  // Subscription em tempo real para o ticket (status) + polling de fallback
   useEffect(() => {
-    if (!ticketId || !ticket) return;
+    if (!ticketId) return;
 
+    // Subscription (funciona quando Supabase Realtime está configurado)
     const channel = ticketService.subscribeToTicket(ticketId, (payload) => {
       if (payload.new && payload.new.id === ticketId) {
         setTicket(prev => (!prev || prev.status !== payload.new.status) ? payload.new as Ticket : prev);
       }
     });
 
-    return () => { channel?.unsubscribe(); };
-  }, [ticketId, ticket?.status]);
+    // Polling a cada 5s como fallback confiável
+    const pollTicket = setInterval(async () => {
+      try {
+        const updated = await ticketService.getTicketById(ticketId);
+        if (updated) {
+          setTicket(prev => {
+            if (!prev || prev.status !== updated.status || prev.updated_at !== updated.updated_at) {
+              return updated;
+            }
+            return prev;
+          });
+        }
+      } catch { /* ignora erros silenciosos de polling */ }
+    }, 5000);
 
-  // Subscription em tempo real para mensagens
+    return () => {
+      channel?.unsubscribe();
+      clearInterval(pollTicket);
+    };
+  }, [ticketId]);
+
+  // Subscription em tempo real para mensagens + polling de fallback
   useEffect(() => {
     if (!ticketId) return;
 
+    // Subscription (funciona quando Supabase Realtime está configurado)
     const channel = messageService.subscribeToMessages(ticketId, (payload) => {
       if (payload.new) {
         setMessages(prev => {
@@ -77,7 +97,26 @@ export function TicketChatPage() {
       }
     });
 
-    return () => { channel.unsubscribe(); };
+    // Polling a cada 4s como fallback confiável
+    const pollMessages = setInterval(async () => {
+      try {
+        const latest = await messageService.getMessages(ticketId);
+        setMessages(prev => {
+          // Só atualiza se houver mensagens novas (diferentes das mensagens temporárias)
+          const realPrev = prev.filter(m => !m.id.startsWith('temp-'));
+          if (latest.length !== realPrev.length) {
+            scrollToBottom();
+            return latest;
+          }
+          return prev;
+        });
+      } catch { /* ignora erros silenciosos de polling */ }
+    }, 4000);
+
+    return () => {
+      channel.unsubscribe();
+      clearInterval(pollMessages);
+    };
   }, [ticketId, scrollToBottom]);
 
   const loadData = async () => {

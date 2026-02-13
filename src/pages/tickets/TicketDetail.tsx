@@ -52,19 +52,39 @@ export function TicketDetailPage() {
     // Subscribe to new messages
     const channel = messageService.subscribeToMessages(id, (payload) => {
       if (payload.new) {
-        // Add message directly to avoid race conditions with loadMessages()
         setMessages(prev => {
-          // Check if message already exists to avoid duplicates
-          if (prev.some(m => m.id === payload.new.id)) {
-            return prev;
-          }
+          if (prev.some(m => m.id === payload.new.id)) return prev;
           return [...prev, payload.new];
         });
       }
     });
 
+    // Polling a cada 4s como fallback confiável para mensagens
+    const pollMessages = setInterval(async () => {
+      try {
+        const latest = await messageService.getMessages(id);
+        setMessages(prev => {
+          const realPrev = prev.filter(m => !m.id.startsWith('temp-'));
+          if (latest.length !== realPrev.length) {
+            setTimeout(() => scrollToBottom(), 50);
+            return latest;
+          }
+          return prev;
+        });
+      } catch { /* ignora erros silenciosos de polling */ }
+    }, 4000);
+
+    // Polling a cada 5s para status do ticket
+    const pollTicket = setInterval(async () => {
+      try {
+        await fetchTicketById(id);
+      } catch { /* ignora erros silenciosos de polling */ }
+    }, 5000);
+
     return () => {
       channel.unsubscribe();
+      clearInterval(pollMessages);
+      clearInterval(pollTicket);
     };
   }, [id]);
 
