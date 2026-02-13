@@ -29,12 +29,8 @@ const TicketListPage = lazy(() => import('./pages/tickets/TicketList'));
 const TicketDetailPage = lazy(() => import('./pages/tickets/TicketDetail'));
 const KnowledgeBasePage = lazy(() => import('./pages/admin/KnowledgeBase'));
 const WebhooksPage = lazy(() => import('./pages/admin/Webhooks'));
-const QuickRepliesPage = lazy(() => import('./pages/admin/QuickReplies'));
-const AIFeedbackPage = lazy(() => import('./pages/admin/AIFeedback'));
+const ErrorLogPage = lazy(() => import('./pages/admin/ErrorLog'));
 const UsersPage = lazy(() => import('./pages/admin/Users'));
-const EmailIntegrationPage = lazy(() => import('./pages/admin/EmailIntegration'));
-const InstagramIntegrationPage = lazy(() => import('./pages/admin/InstagramIntegration'));
-const GmailCallbackPage = lazy(() => import('./pages/auth/GmailCallback'));
 
 function App() {
   const { initialize } = useAuthStore();
@@ -55,7 +51,6 @@ function App() {
           <Route path="/tickets/new" element={<NewTicketPage />} />
           <Route path="/tickets/:ticketId/success" element={<TicketSuccessPage />} />
           <Route path="/tickets/:ticketId/chat" element={<TicketChatPage />} />
-          <Route path="/auth/gmail/callback" element={<GmailCallbackPage />} />
 
           {/* Protected Routes */}
           <Route path="/" element={
@@ -70,11 +65,8 @@ function App() {
             {/* Admin Only Routes */}
             <Route path="admin/knowledge" element={<AdminRoute><KnowledgeBasePage /></AdminRoute>} />
             <Route path="admin/webhooks" element={<AdminRoute><WebhooksPage /></AdminRoute>} />
-            <Route path="admin/quick-replies" element={<AdminRoute><QuickRepliesPage /></AdminRoute>} />
-            <Route path="admin/ai-feedback" element={<AdminRoute><AIFeedbackPage /></AdminRoute>} />
+            <Route path="admin/error-log" element={<AdminRoute><ErrorLogPage /></AdminRoute>} />
             <Route path="admin/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
-            <Route path="admin/email-integration" element={<AdminRoute><EmailIntegrationPage /></AdminRoute>} />
-            <Route path="admin/instagram-integration" element={<AdminRoute><InstagramIntegrationPage /></AdminRoute>} />
           </Route>
 
           {/* 404 */}
