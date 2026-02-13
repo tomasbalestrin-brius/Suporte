@@ -1,18 +1,30 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ticketService } from '@/services/ticket.service';
 import { messageService } from '@/services/message.service';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Send, Bot, User, Loader2, CheckCircle2, Clock, AlertCircle, MessageSquare } from 'lucide-react';
+import {
+  CheckCircle2, Clock, Search, CheckCircle,
+  Send, Bot, User, Loader2, AlertCircle, MessageSquare,
+} from 'lucide-react';
 import { formatDate, getStatusColor, getStatusLabel } from '@/lib/utils';
 import { SafeContent } from '@/components/ui/safe-content';
 import { BethelLogo } from '@/components/ui/BethelLogo';
 import type { Ticket, Message } from '@/types';
 
+const STATUS_STEPS = [
+  { key: 'open',        label: 'Aberto',        icon: CheckCircle2, description: 'Seu ticket foi registrado com sucesso' },
+  { key: 'in_progress', label: 'Em Andamento',   icon: Search,       description: 'Nossa equipe está trabalhando na resolução' },
+  { key: 'resolved',    label: 'Resolvido',      icon: CheckCircle,  description: 'Seu problema foi resolvido!' },
+  { key: 'closed',      label: 'Fechado',        icon: CheckCircle,  description: 'Ticket encerrado' },
+];
+
 export function TicketChatPage() {
   const { ticketId } = useParams<{ ticketId: string }>();
+  const navigate = useNavigate();
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -27,23 +39,54 @@ export function TicketChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior });
   }, []);
 
-  // Carrega ticket e mensagens
   useEffect(() => {
     if (!ticketId) return;
     loadData();
   }, [ticketId]);
 
-  // Auto-scroll apenas após carregamento inicial
   useEffect(() => {
     if (!isInitialLoad && messages.length > 0) {
       scrollToBottom();
     }
   }, [messages, isInitialLoad, scrollToBottom]);
 
-  // Subscription em tempo real para novas mensagens
+  // Subscription em tempo real para o ticket (status) + polling de fallback
   useEffect(() => {
     if (!ticketId) return;
 
+    // Subscription (funciona quando Supabase Realtime está configurado)
+    const channel = ticketService.subscribeToTicket(ticketId, (payload) => {
+      if (payload.new && payload.new.id === ticketId) {
+        setTicket(prev => (!prev || prev.status !== payload.new.status) ? payload.new as Ticket : prev);
+      }
+    });
+
+    // Polling a cada 5s como fallback confiável
+    const pollTicket = setInterval(async () => {
+      try {
+        const updated = await ticketService.getTicketById(ticketId);
+        if (updated) {
+          setTicket(prev => {
+            if (!prev || prev.status !== updated.status || prev.updated_at !== updated.updated_at) {
+              return updated;
+            }
+            return prev;
+          });
+        }
+      } catch { /* ignora erros silenciosos de polling */ }
+    }, 5000);
+
+    return () => {
+      channel?.unsubscribe();
+      clearInterval(pollTicket);
+    };
+  }, [ticketId]);
+
+  // Subscription em tempo real para mensagens + polling de fallback
+  useEffect(() => {
+    if (!ticketId) return;
+
+    // Subscription (funciona quando Supabase Realtime está configurado)
     const channel = messageService.subscribeToMessages(ticketId, (payload) => {
       if (payload.new) {
         setMessages(prev => {
@@ -54,8 +97,25 @@ export function TicketChatPage() {
       }
     });
 
+    // Polling a cada 4s como fallback confiável
+    const pollMessages = setInterval(async () => {
+      try {
+        const latest = await messageService.getMessages(ticketId);
+        setMessages(prev => {
+          // Só atualiza se houver mensagens novas (diferentes das mensagens temporárias)
+          const realPrev = prev.filter(m => !m.id.startsWith('temp-'));
+          if (latest.length !== realPrev.length) {
+            scrollToBottom();
+            return latest;
+          }
+          return prev;
+        });
+      } catch { /* ignora erros silenciosos de polling */ }
+    }, 4000);
+
     return () => {
       channel.unsubscribe();
+      clearInterval(pollMessages);
     };
   }, [ticketId, scrollToBottom]);
 
@@ -87,7 +147,7 @@ export function TicketChatPage() {
     setNewMessage('');
     setSending(true);
 
-    // Optimistic update — adiciona mensagem imediatamente na UI
+    // Optimistic update
     const optimisticMsg: Message = {
       id: `temp-${Date.now()}`,
       ticket_id: ticketId,
@@ -100,16 +160,9 @@ export function TicketChatPage() {
     scrollToBottom();
 
     try {
-      const saved = await messageService.createMessage({
-        ticket_id: ticketId,
-        content,
-        is_ai: false,
-      });
-
-      // Substitui a mensagem otimista pela real
+      const saved = await messageService.createMessage({ ticket_id: ticketId, content, is_ai: false });
       setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? saved : m));
     } catch (error) {
-      // Remove mensagem otimista em caso de erro
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
       setNewMessage(content);
       console.error('Error sending message:', error);
@@ -119,28 +172,21 @@ export function TicketChatPage() {
     }
   };
 
-  const getStatusIcon = () => {
-    switch (ticket?.status) {
-      case 'resolved': return <CheckCircle2 className="h-4 w-4" />;
-      case 'closed': return <CheckCircle2 className="h-4 w-4" />;
-      case 'in_progress': return <Clock className="h-4 w-4" />;
-      default: return <AlertCircle className="h-4 w-4" />;
-    }
+  const getCurrentStepIndex = () => {
+    if (!ticket) return 0;
+    const idx = STATUS_STEPS.findIndex(s => s.key === ticket.status);
+    return idx === -1 ? 0 : idx;
   };
 
-  const isClosed = ticket?.status === 'closed' || ticket?.status === 'resolved';
-
-  // Determina de que lado mostrar a mensagem no ponto de vista do cliente:
-  // - Mensagens sem user_id e não AI = mensagens do cliente (lado direito)
-  // - Mensagens com user_id ou AI = mensagens do suporte (lado esquerdo)
   const isCustomerMessage = (msg: Message) => !msg.user_id && !msg.is_ai;
+  const isClosed = ticket?.status === 'closed' || ticket?.status === 'resolved';
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
         <div className="text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Carregando conversa...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-gray-400">Carregando...</p>
         </div>
       </div>
     );
@@ -148,155 +194,240 @@ export function TicketChatPage() {
 
   if (!ticket) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Ticket não encontrado</h2>
-          <p className="text-muted-foreground">Verifique o link ou entre em contato com o suporte.</p>
+          <h2 className="text-xl font-semibold text-white mb-2">Ticket não encontrado</h2>
+          <p className="text-gray-400 mb-4">Verifique o link ou entre em contato com o suporte.</p>
+          <Button onClick={() => navigate('/')}>Voltar para Início</Button>
         </div>
       </div>
     );
   }
 
+  const currentStepIndex = getCurrentStepIndex();
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header fixo */}
-      <div className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="flex-shrink-0">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-primary" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6">
+      <div className="max-w-3xl mx-auto space-y-6">
+
+        {/* Logo Header */}
+        <div className="flex justify-center mb-2">
+          <BethelLogo variant="full" subtitle="Suporte" className="text-white w-auto" />
+        </div>
+
+        {/* Success / Status banner */}
+        <Card className={`glass ${isClosed ? 'border-blue-500/20 bg-blue-500/5' : 'border-green-500/20 bg-green-500/5'}`}>
+          <CardHeader className="text-center pb-3">
+            <div className={`mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-3 ${isClosed ? 'bg-blue-500/20' : 'bg-green-500/20'}`}>
+              <CheckCircle2 className={`w-8 h-8 ${isClosed ? 'text-blue-400' : 'text-green-500'}`} />
             </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate">{ticket.title}</p>
-            <div className="flex items-center gap-1.5">
-              {getStatusIcon()}
-              <Badge className={`text-xs px-1.5 py-0 ${getStatusColor(ticket.status)}`}>
+            <CardTitle className="text-xl text-white">
+              {ticket.status === 'resolved' ? 'Ticket Resolvido!' : ticket.status === 'closed' ? 'Ticket Encerrado' : 'Ticket Aberto com Sucesso!'}
+            </CardTitle>
+            <CardDescription className="text-base">
+              Protocolo: <span className="font-mono font-bold text-white">{ticket.id.slice(0, 8).toUpperCase()}</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <div className="bg-white/5 border border-white/10 rounded-lg p-3 mb-3">
+              <div className="flex items-center justify-center gap-2 text-yellow-400 mb-1">
+                <Clock className="w-4 h-4" />
+                <p className="font-semibold text-sm">Prazo de Atendimento</p>
+              </div>
+              <p className="text-white text-sm">
+                Nossa equipe responderá em até <strong className="text-yellow-400">24 horas</strong>
+              </p>
+              {ticket.customer_email && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Atualizações serão enviadas para: <strong className="text-white">{ticket.customer_email}</strong>
+                </p>
+              )}
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Badge className={`text-sm px-3 py-1 ${getStatusColor(ticket.status)}`}>
                 {getStatusLabel(ticket.status)}
               </Badge>
             </div>
-          </div>
-          <BethelLogo variant="icon" className="text-muted-foreground opacity-60 flex-shrink-0" />
-        </div>
-      </div>
+          </CardContent>
+        </Card>
 
-      {/* Info do ticket */}
-      <div className="max-w-2xl mx-auto w-full px-4 pt-4">
-        <div className="bg-muted/40 rounded-xl px-4 py-3 text-sm text-muted-foreground border border-border/50">
-          <p className="font-medium text-foreground mb-0.5">{ticket.description}</p>
-          <span className="text-xs">Aberto em {formatDate(ticket.created_at)}</span>
-          {ticket.category && (
-            <span className="text-xs ml-3">· Categoria: {ticket.category}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Área de mensagens */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
-          {messages.length === 0 ? (
-            <div className="text-center py-12">
-              <Bot className="mx-auto h-12 w-12 text-muted-foreground opacity-30 mb-3" />
-              <p className="text-muted-foreground text-sm">
-                Nossa equipe de suporte responderá em breve.
-              </p>
-            </div>
-          ) : (
-            messages.map((message) => {
-              const isFromCustomer = isCustomerMessage(message);
-              return (
-                <div
-                  key={message.id}
-                  className={`flex gap-2 ${isFromCustomer ? 'flex-row-reverse' : 'flex-row'}`}
-                >
-                  {/* Avatar */}
-                  <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
-                    isFromCustomer
-                      ? 'bg-primary text-primary-foreground'
-                      : message.is_ai
-                      ? 'bg-violet-500/10 text-violet-500'
-                      : 'bg-emerald-500/10 text-emerald-500'
-                  }`}>
-                    {isFromCustomer ? (
-                      <User className="h-3.5 w-3.5" />
-                    ) : message.is_ai ? (
-                      <Bot className="h-3.5 w-3.5" />
-                    ) : (
-                      <User className="h-3.5 w-3.5" />
+        {/* Progress Tracker */}
+        <Card className="glass">
+          <CardHeader>
+            <CardTitle className="text-white">Acompanhamento</CardTitle>
+            <CardDescription>Status atual do seu atendimento</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {STATUS_STEPS.map((step, index) => {
+                const Icon = step.icon;
+                const isCompleted = index <= currentStepIndex;
+                const isCurrent = index === currentStepIndex;
+                return (
+                  <div key={step.key} className="relative">
+                    {index < STATUS_STEPS.length - 1 && (
+                      <div className={`absolute left-5 top-10 w-0.5 h-6 ${index < currentStepIndex ? 'bg-green-500' : 'bg-white/20'}`} />
                     )}
-                  </div>
-
-                  {/* Bubble */}
-                  <div className={`max-w-[75%] ${isFromCustomer ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
-                    {/* Label */}
-                    <span className="text-[11px] text-muted-foreground px-1">
-                      {isFromCustomer
-                        ? (ticket.customer_name || 'Você')
-                        : message.is_ai
-                        ? 'Assistente IA'
-                        : 'Suporte'}
-                    </span>
-                    {/* Bubble content */}
-                    <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                      isFromCustomer
-                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                        : message.is_ai
-                        ? 'bg-violet-500/10 text-foreground border border-violet-500/20 rounded-tl-sm'
-                        : 'bg-card border border-border text-foreground rounded-tl-sm'
-                    } ${message.id?.startsWith('temp-') ? 'opacity-60' : ''}`}>
-                      <SafeContent content={message.content} preserveWhitespace />
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${isCompleted ? 'bg-green-500/20 border-2 border-green-500' : 'bg-white/5 border-2 border-white/20'}`}>
+                        <Icon className={`w-5 h-5 ${isCompleted ? 'text-green-500' : 'text-white/40'}`} />
+                      </div>
+                      <div className="flex-1 pt-1.5">
+                        <h3 className={`font-semibold text-sm ${isCompleted ? 'text-white' : 'text-white/50'}`}>
+                          {step.label}
+                          {isCurrent && (
+                            <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">Atual</span>
+                          )}
+                        </h3>
+                        {isCompleted && (
+                          <p className="text-xs text-gray-400">{step.description}</p>
+                        )}
+                      </div>
                     </div>
-                    {/* Timestamp */}
-                    <span className="text-[10px] text-muted-foreground px-1">
-                      {formatDate(message.created_at)}
-                    </span>
                   </div>
-                </div>
-              );
-            })
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Input fixo no rodapé */}
-      <div className="border-t border-border bg-card/80 backdrop-blur-sm sticky bottom-0">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          {isClosed ? (
-            <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>
-                {ticket.status === 'resolved'
-                  ? 'Este ticket foi marcado como resolvido.'
-                  : 'Este ticket está fechado.'}
-              </span>
+                );
+              })}
             </div>
-          ) : (
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Input
-                ref={inputRef}
-                placeholder="Digite sua mensagem..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                disabled={sending}
-                className="flex-1 rounded-full bg-muted border-transparent focus-visible:ring-1"
-                autoComplete="off"
-              />
-              <Button
-                type="submit"
-                size="icon"
-                disabled={sending || !newMessage.trim()}
-                className="rounded-full flex-shrink-0"
-              >
-                {sending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </form>
-          )}
+          </CardContent>
+        </Card>
+
+        {/* CHAT BLOCK */}
+        <Card className="glass">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              <CardTitle className="text-white">Chat de Atendimento</CardTitle>
+            </div>
+            <CardDescription>
+              {isClosed
+                ? 'Ticket encerrado — o histórico completo da conversa está disponível abaixo'
+                : 'Acompanhe as respostas da nossa equipe em tempo real'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {/* Messages area — sem limite de altura quando fechado para preservar histórico visível */}
+            <div className={`px-4 pb-2 space-y-3 overflow-y-auto ${isClosed ? 'min-h-[100px]' : 'min-h-[200px] max-h-[400px]'}`}>
+              {messages.length === 0 ? (
+                <div className="text-center py-10">
+                  <Bot className="mx-auto h-10 w-10 text-gray-600 mb-3" />
+                  <p className="text-gray-500 text-sm">Nossa equipe responderá em breve.</p>
+                </div>
+              ) : (
+                messages.map((message) => {
+                  const fromCustomer = isCustomerMessage(message);
+                  return (
+                    <div key={message.id} className={`flex gap-2 ${fromCustomer ? 'flex-row-reverse' : 'flex-row'}`}>
+                      {/* Avatar */}
+                      <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
+                        fromCustomer ? 'bg-primary text-primary-foreground'
+                        : message.is_ai ? 'bg-violet-500/20 text-violet-400'
+                        : 'bg-emerald-500/20 text-emerald-400'
+                      }`}>
+                        {message.is_ai ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
+                      </div>
+                      {/* Bubble */}
+                      <div className={`max-w-[75%] flex flex-col gap-1 ${fromCustomer ? 'items-end' : 'items-start'}`}>
+                        <span className="text-[11px] text-gray-500 px-1">
+                          {fromCustomer
+                            ? (ticket.customer_name || 'Você')
+                            : message.is_ai ? 'Assistente IA' : 'Suporte'}
+                        </span>
+                        <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                          fromCustomer
+                            ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                            : message.is_ai
+                            ? 'bg-violet-500/10 text-white border border-violet-500/20 rounded-tl-sm'
+                            : 'bg-white/10 text-white border border-white/10 rounded-tl-sm'
+                        } ${message.id?.startsWith('temp-') ? 'opacity-60' : ''}`}>
+                          <SafeContent content={message.content} preserveWhitespace />
+                        </div>
+                        <span className="text-[10px] text-gray-600 px-1">{formatDate(message.created_at)}</span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="px-4 pb-4 pt-2 border-t border-white/10">
+              {isClosed ? (
+                <div className="flex flex-col items-center gap-1 py-3 text-sm text-center">
+                  <div className="flex items-center gap-2 text-green-400 font-medium">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>{ticket.status === 'resolved' ? 'Ticket resolvido com sucesso!' : 'Ticket encerrado.'}</span>
+                  </div>
+                  <p className="text-xs text-gray-500">O histórico completo desta conversa permanece disponível acima para sua consulta.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <Input
+                    ref={inputRef}
+                    placeholder="Digite sua mensagem..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    disabled={sending}
+                    className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-gray-500 rounded-full focus-visible:ring-1"
+                    autoComplete="off"
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    disabled={sending || !newMessage.trim()}
+                    className="rounded-full flex-shrink-0"
+                  >
+                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
+                </form>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ticket Details */}
+        <Card className="glass">
+          <CardHeader>
+            <CardTitle className="text-white">Detalhes do Ticket</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <p className="text-xs text-gray-400">Título</p>
+              <p className="text-white font-medium">{ticket.title}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Categoria</p>
+              <p className="text-white">{ticket.category}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Descrição</p>
+              <p className="text-white whitespace-pre-wrap text-sm">{ticket.description}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Aberto em</p>
+              <p className="text-white text-sm">{formatDate(ticket.created_at)}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Actions */}
+        <div className="flex flex-col gap-3 pb-6">
+          <Button
+            onClick={() => navigate('/')}
+            size="lg"
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+          >
+            Voltar para Início
+          </Button>
+          <Button
+            onClick={() => navigate('/tickets/new')}
+            variant="outline"
+            size="lg"
+            className="w-full"
+          >
+            Abrir Novo Ticket
+          </Button>
         </div>
       </div>
     </div>
