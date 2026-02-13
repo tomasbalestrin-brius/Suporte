@@ -23,6 +23,7 @@ import { NotFoundPage } from './pages/NotFound';
 // Lazy load all other pages for better performance
 const NewTicketPage = lazy(() => import('./pages/tickets/NewTicket'));
 const TicketSuccessPage = lazy(() => import('./pages/tickets/TicketSuccess'));
+const TicketChatPage = lazy(() => import('./pages/tickets/TicketChat'));
 const DashboardPage = lazy(() => import('./pages/dashboard/Dashboard'));
 const TicketListPage = lazy(() => import('./pages/tickets/TicketList'));
 const TicketDetailPage = lazy(() => import('./pages/tickets/TicketDetail'));
@@ -53,6 +54,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/tickets/new" element={<NewTicketPage />} />
           <Route path="/tickets/:ticketId/success" element={<TicketSuccessPage />} />
+          <Route path="/tickets/:ticketId/chat" element={<TicketChatPage />} />
           <Route path="/auth/gmail/callback" element={<GmailCallbackPage />} />
 
           {/* Protected Routes */}

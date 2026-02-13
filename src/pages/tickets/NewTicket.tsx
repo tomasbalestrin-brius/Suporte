@@ -156,7 +156,7 @@ export function NewTicketPage() {
         });
 
         // Navigate immediately - no need to wait
-        navigate(`/tickets/${newTicket.id}/success`);
+        navigate(`/tickets/${newTicket.id}/chat`);
       } else {
         throw new Error('Ticket criado mas ID não retornado');
       }

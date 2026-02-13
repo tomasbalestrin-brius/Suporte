@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Send, Bot, User, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, RefreshCw, MessageSquare, Copy, ExternalLink } from 'lucide-react';
 import { formatDate, getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/lib/utils';
 import { useToast } from '@/hooks/useToast';
 import { SafeContent } from '@/components/ui/safe-content';
@@ -286,15 +286,38 @@ export function TicketDetailPage() {
             <Badge variant="outline" className={getPriorityColor(currentTicket.priority)}>
               {getPriorityLabel(currentTicket.priority)}
             </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="ml-auto"
-            >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            </Button>
+            <div className="ml-auto flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const chatUrl = `${window.location.origin}/tickets/${id}/chat`;
+                  navigator.clipboard.writeText(chatUrl);
+                  toast({ title: 'Link do chat copiado!', description: chatUrl });
+                }}
+                title="Copiar link do chat para o cliente"
+              >
+                <Copy className="h-3.5 w-3.5 mr-1.5" />
+                Copiar link do chat
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`/tickets/${id}/chat`, '_blank')}
+                title="Abrir chat do cliente"
+              >
+                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                Ver chat
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
           </div>
           <p className="text-muted-foreground">{currentTicket.description}</p>
           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
@@ -340,16 +363,24 @@ export function TicketDetailPage() {
                     </p>
                   </div>
                 ) : (
-                  messages.map((message) => (
+                  messages.map((message) => {
+                    // Admin (eu): mensagens com user_id do admin logado → lado direito
+                    // Cliente: mensagens sem user_id e não AI → lado esquerdo com cor diferente
+                    // IA: is_ai = true → lado esquerdo
+                    const isAdminMessage = !!message.user_id && !message.is_ai;
+                    const isCustomerMessage = !message.user_id && !message.is_ai;
+                    const isRightSide = isAdminMessage;
+
+                    return (
                     <div
                       key={message.id}
-                      className={`flex gap-3 ${
-                        message.is_ai ? '' : 'flex-row-reverse'
-                      }`}
+                      className={`flex gap-3 ${isRightSide ? 'flex-row-reverse' : ''}`}
                     >
                       <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                         message.is_ai
                           ? 'bg-primary/10 text-primary'
+                          : isCustomerMessage
+                          ? 'bg-orange-500/10 text-orange-500'
                           : 'bg-secondary/10 text-secondary'
                       }`}>
                         {message.is_ai ? (
@@ -358,12 +389,15 @@ export function TicketDetailPage() {
                           <User className="h-4 w-4" />
                         )}
                       </div>
-                      <div className={`flex-1 max-w-[80%] ${
-                        message.is_ai ? '' : 'flex flex-col items-end'
-                      }`}>
+                      <div className={`flex-1 max-w-[80%] ${isRightSide ? 'flex flex-col items-end' : ''}`}>
+                        <p className="text-xs text-muted-foreground mb-1 px-1">
+                          {message.is_ai ? 'Assistente IA' : isCustomerMessage ? 'Cliente' : 'Suporte'}
+                        </p>
                         <div className={`rounded-lg p-3 ${
                           message.is_ai
                             ? 'bg-muted'
+                            : isCustomerMessage
+                            ? 'bg-orange-500/10 border border-orange-500/20'
                             : 'bg-primary text-primary-foreground'
                         }`}>
                           <SafeContent
@@ -405,7 +439,7 @@ export function TicketDetailPage() {
                         </div>
                       </div>
                     </div>
-                  ))
+                  );})
                 )}
                 <div ref={messagesEndRef} />
               </div>
@@ -532,6 +566,43 @@ export function TicketDetailPage() {
               <div>
                 <span className="text-muted-foreground">Última Atualização:</span>
                 <p className="mt-1">{formatDate(currentTicket.updated_at)}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Link do Chat para o Cliente */}
+          <Card className="glass border-primary/20 bg-primary/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-primary" />
+                Chat do Cliente
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Compartilhe este link com o cliente para que ele acompanhe o ticket em tempo real.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={() => {
+                    const chatUrl = `${window.location.origin}/tickets/${id}/chat`;
+                    navigator.clipboard.writeText(chatUrl);
+                    toast({ title: 'Link copiado!', description: 'Envie para o cliente.' });
+                  }}
+                >
+                  <Copy className="h-3 w-3 mr-1.5" />
+                  Copiar link
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(`/tickets/${id}/chat`, '_blank')}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
               </div>
             </CardContent>
           </Card>
